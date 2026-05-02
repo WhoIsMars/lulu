@@ -19,6 +19,7 @@ files_modified:
   - src/styles/tokens.css
   - src/views/HomeView.vue
   - src/views/PolaroidView.vue
+  - src/router/index.ts
   - vitest.config.ts
   - playwright.config.ts
   - tests/unit/.gitkeep
@@ -508,7 +509,7 @@ html {
     - `eslint.config.js` contains `typescriptEslint.config` and `eslintConfigPrettier` is the LAST argument.
     - `index.html` contains `lang="it"`, `noindex`, `viewport-fit=cover`; does NOT contain `maximum-scale`.
     - `src/styles/tokens.css` contains all tokens: grep finds `--c-soot-800`, `--c-paper-100`, `--c-focus`, `--c-error`, `--sp-md`, `--fs-body`, `--shadow-paper`, `--motion-duration-deliberate`, `--motion-duration-slow`.
-    - `src/styles/tokens.css` reduced-motion block does NOT override `--motion-duration-deliberate` (grep `-A 8 'prefers-reduced-motion' src/styles/tokens.css | grep -v '^#' | grep -c 'deliberate'` returns 0).
+    - `src/styles/tokens.css` reduced-motion block does NOT redeclare `--motion-duration-deliberate` (`grep -A 8 'prefers-reduced-motion' src/styles/tokens.css | grep -cE '^\s*--motion-duration-deliberate\s*:'` returns 0; the regex anchor excludes CSS `/* ... */` comments).
     - `npm run lint` exits 0.
     - `npm run typecheck` exits 0.
   </acceptance_criteria>
