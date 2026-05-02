@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import { resolve } from 'node:path'
+import { poemsPlugin } from './vite/plugin-poems'
 
 // Resolve the @/-alias target. Prefer `import.meta.url` (vite's idiom) when it
 // is a file URL; fall back to `process.cwd()/src` when the config is loaded by
@@ -21,7 +22,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     base: env.VITE_BASE ?? '/',
-    plugins: [vue()],
+    plugins: [vue(), poemsPlugin()],
     resolve: {
       alias: { '@': resolveSrcPath() },
     },
