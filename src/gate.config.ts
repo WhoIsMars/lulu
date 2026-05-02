@@ -7,6 +7,6 @@
 // the contents — once revealed — are still in plain bytes in the same bundle).
 // For real privacy, use the AES-GCM upgrade path documented in PRIV-01 (v2 roadmap).
 
-export const SALT_B64 = "IBZRuvpmPXADbnpvolZq9g=="
-export const HASH_B64 = "R0BaUK4elX8W7QpNjWxxZYbf4w0NHxvBqnkHUoZ7Sz8="
+export const SALT_B64 = "box6ky+2lBI7idDBFd4FVQ=="
+export const HASH_B64 = "gbWIAaGVvK9K5rsN3enhqlzR/lUV5wZyKTZZpUgDX4U="
 export const ITERATIONS = 200000
