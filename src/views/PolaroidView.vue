@@ -160,14 +160,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 <style scoped>
 .pview {
-  --card-w: clamp(16rem, 56vw, 26rem);
-  --card-h: calc(var(--card-w) * 1.22);
-  --card-photo-h: calc(var(--card-w) * 0.92);
-  --back-w: clamp(18rem, 60vw, 30rem);
-  --back-h: clamp(24rem, 78dvh, 42rem);
+  /* Single dimension for both faces — front photo + caption fits, back poem
+     has overflow-y inside. Removing the per-face dimension morph stabilises
+     the 3D layer on iOS Safari (was a contributor to the "see the front
+     mirrored on flip" bug). */
+  --card-w: clamp(18rem, 62vw, 28rem);
+  --card-h: clamp(26rem, 78dvh, 42rem);
+  --card-photo-h: calc(var(--card-w) * 0.95);
   --grain-opacity: 0.045;
   --vignette-strength: 0.85;
   --flip-duration: 1100ms;
+  --flip-half: 550ms;
   --flip-ease: cubic-bezier(0.83, 0, 0.17, 1);
   --enter-duration: 850ms;
   --enter-ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -314,16 +317,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   position: relative;
   width: var(--card-w);
   height: var(--card-h);
-  max-height: calc(100dvh - 12rem);
+  max-height: calc(100dvh - 10rem);
   cursor: pointer;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
   transform: rotateY(0deg);
   transition:
     transform var(--flip-duration) var(--flip-ease),
-    width 600ms var(--flip-ease),
-    height 600ms var(--flip-ease),
-    max-height 600ms var(--flip-ease),
     filter 400ms ease-out;
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.7));
   outline: none;
@@ -342,15 +342,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     transform var(--enter-duration) var(--enter-ease);
 }
 .pview[data-entered='true'] .pview__card.pview__card--flipped {
-  width: var(--back-w);
-  height: var(--back-h);
-  max-height: calc(100dvh - 10rem);
   transform: rotateY(180deg);
-  transition:
-    transform var(--flip-duration) var(--flip-ease),
-    width 600ms var(--flip-ease),
-    height 600ms var(--flip-ease),
-    max-height 600ms var(--flip-ease);
+  transition: transform var(--flip-duration) var(--flip-ease);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -372,30 +365,45 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     0 0 0 3px var(--c-focus);
 }
 
-/* ── FACES — DIVs (not spans), no overflow:hidden, with hard 3D guards ── */
+/* ── FACES — divs with bulletproof 3D guards ──
+ * iOS Safari has a long-standing bug where backface-visibility:hidden alone
+ * isn't reliable when faces share the same Z plane. Three-layer guard:
+ *   1. backface-visibility (the spec'd way)
+ *   2. translateZ(1px) on the front to lift it above the back, removing
+ *      z-fighting; back has translateZ(0) so it sits behind
+ *   3. opacity-swap synchronized with the flip midpoint as a hard safety net
+ *      (each face becomes opacity:0 when it's pointing AWAY from the viewer)
+ */
 .pview__face {
   position: absolute;
   inset: 0;
   display: block;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* force GPU layer + 3D context — required on iOS Safari to make
-     backface-visibility actually hide the back of front when card flips */
-  transform: translateZ(0.01px);
-  -webkit-transform: translateZ(0.01px);
-  will-change: transform;
+  will-change: transform, opacity;
   border-radius: 1px;
   box-shadow:
     0 1px 0 rgba(255, 245, 220, 0.3),
     0 24px 50px -10px rgba(0, 0, 0, 0.85),
     0 6px 14px -2px rgba(0, 0, 0, 0.55);
-  transition: box-shadow 320ms ease-out;
+  /* opacity transitions instantly at the flip midpoint */
+  transition:
+    box-shadow 320ms ease-out,
+    opacity 0s linear var(--flip-half, 550ms);
 }
 
-/* FRONT */
+/* FRONT — translateZ(1px) lifts above back to prevent z-fighting */
 .pview__face--front {
   background: linear-gradient(to bottom, #f4ecd6 0%, var(--c-paper-100) 35%, #ddd0b0 100%);
   padding: 6% 6% 0 6%;
+  transform: translateZ(1px);
+  -webkit-transform: translateZ(1px);
+  opacity: 1;
+}
+/* SAFETY NET — when card flipped, front becomes opacity 0 at flip midpoint
+   so even if backface-visibility fails on iOS, you can't see the front. */
+.pview__card--flipped .pview__face--front {
+  opacity: 0;
 }
 .pview__face--front::before {
   content: '';
@@ -531,14 +539,21 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   }
 }
 
-/* BACK */
+/* BACK — rotateY(180deg) so it faces the viewer when card itself rotates 180.
+   translateZ(0) keeps it BEHIND the front, so when card is unflipped you
+   can't see it. opacity 0 initially is the safety net for iOS. */
 .pview__face--back {
   background: linear-gradient(to bottom, #f0e6d0 0%, var(--c-paper-100) 35%, #e3d6b8 100%);
-  transform: rotateY(180deg) translateZ(0.01px);
-  -webkit-transform: rotateY(180deg) translateZ(0.01px);
+  transform: rotateY(180deg) translateZ(1px);
+  -webkit-transform: rotateY(180deg) translateZ(1px);
   padding: clamp(var(--sp-md), 3vw, var(--sp-2xl));
   display: flex;
   flex-direction: column;
+  opacity: 0;
+}
+/* SAFETY NET — when flipped, back fades to opacity 1 at midpoint */
+.pview__card--flipped .pview__face--back {
+  opacity: 1;
 }
 .pview__face--back::before {
   content: '';
@@ -643,18 +658,33 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   margin-bottom: 0;
 }
 
-/* reduced-motion */
+/* reduced-motion — instant face swap, no 3D rotation */
 @media (prefers-reduced-motion: reduce) {
   .pview__card {
     transition: none !important;
+    transform: none !important;
   }
   .pview[data-entered='false'] .pview__card,
-  .pview[data-entered='true'] .pview__card {
-    opacity: 1;
-    transform: rotateY(0deg) !important;
-  }
+  .pview[data-entered='true'] .pview__card,
   .pview[data-entered='true'] .pview__card.pview__card--flipped {
-    transform: rotateY(180deg) !important;
+    opacity: 1;
+    transform: none !important;
+  }
+  .pview__face {
+    transition: none !important;
+  }
+  .pview__face--back {
+    transform: none !important;
+    -webkit-transform: none !important;
+  }
+  /* show only the active face, not via rotation */
+  .pview__card:not(.pview__card--flipped) .pview__face--back {
+    opacity: 0 !important;
+    visibility: hidden;
+  }
+  .pview__card--flipped .pview__face--front {
+    opacity: 0 !important;
+    visibility: hidden;
   }
   .pview__poem-stanza {
     opacity: 1 !important;
