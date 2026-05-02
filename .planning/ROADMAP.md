@@ -53,7 +53,10 @@ A11Y-* requirements are cross-cutting in spirit but each is owned by a single ph
   2. `content/manifest.yaml` definisce per ogni foto `photo`, `poem` (slug), `alt` ed è validato con Zod a build
   3. Build fallisce con messaggio chiaro se: foto referenziata manca da `photos/`, slug poesia non esiste, `alt` è troppo corto, oppure foto/poesie sono orfane
   4. Esiste un comando locale `npm run manifest:check` che dà gli stessi errori senza richiedere un build completo
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 02-01-schema-parser-validator-PLAN.md — Zod schema, pure parser, manifest-loader, content/manifest.yaml + Vitest unit tests
+  - [ ] 02-02-vite-plugin-virtual-poems-PLAN.md — poemsPlugin (virtual:poems + HMR), wire in vite.config, reduce src/data/poems.ts to facade
+  - [ ] 02-03-cli-check-ci-integration-PLAN.md — scripts/manifest-check.ts CLI + npm script + CI gate before Build
 
 ### Phase 3: Static Room + Polaroid Layout + Reading View
 **Goal**: La stanza, i fili, le polaroid e la vista poesia esistono in forma statica e completamente accessibile — niente animazioni, ma struttura semantica, focus management e tipografia di lettura sono già definitivi
