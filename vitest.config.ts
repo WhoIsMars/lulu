@@ -11,5 +11,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: false,
     include: ['tests/unit/**/*.test.ts'],
+    setupFiles: ['./tests/unit/setup-crypto.ts'],
   },
 })
