@@ -56,12 +56,14 @@ export function poemsPlugin(opts: PoemsPluginOptions = {}): Plugin {
       if (id !== RESOLVED_ID) return undefined
 
       try {
-        const { poems, watchPaths } = loadManifest({ rootDir })
-        // Track each watched path in Vite's dep graph so changes invalidate
-        // this module. addWatchFile is per-load — must be called every time.
-        for (const p of watchPaths) {
-          this.addWatchFile(p)
-        }
+        const { poems } = loadManifest({ rootDir })
+        // addWatchFile registers FILE paths (not directories) into Vite's dep
+        // graph so changes invalidate this module. Directories must NOT be
+        // passed here — Vite's import-analysis would try to resolve them as
+        // module imports and fail. The photos directory is watched via
+        // server.watcher.add() in configureServer instead.
+        this.addWatchFile(poemsTxt)
+        this.addWatchFile(manifestYaml)
         return generateModuleSource(poems)
       } catch (err: unknown) {
         if (isBuild) {

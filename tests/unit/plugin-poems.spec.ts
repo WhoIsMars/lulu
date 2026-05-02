@@ -113,7 +113,7 @@ describe('poemsPlugin', () => {
       expect(out).toContain('getPrevPoem')
     })
 
-    it("registers watch files via addWatchFile during load", () => {
+    it("registers watch files (FILES only, not directories) via addWatchFile during load", () => {
       const root = setupFixture(VALID_YAML, [
         ['Un_altro_sogno.JPG', 'x'],
         ['Luce.jpg', 'y'],
@@ -125,7 +125,10 @@ describe('poemsPlugin', () => {
 
       expect(ctx.watched).toContain(path.join(root, 'poems.txt'))
       expect(ctx.watched).toContain(path.join(root, 'content', 'manifest.yaml'))
-      expect(ctx.watched).toContain(path.join(root, 'public', 'photos'))
+      // The photos directory is NOT registered via addWatchFile — Vite would
+      // try to resolve it as a module import. Directory watching is done via
+      // server.watcher.add() in configureServer instead.
+      expect(ctx.watched).not.toContain(path.join(root, 'public', 'photos'))
     })
 
     it("throws ManifestValidationError in build mode when fixture manifest is invalid", () => {
