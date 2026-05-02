@@ -36,7 +36,12 @@ A11Y-* requirements are cross-cutting in spirit but each is owned by a single ph
   3. La home mostra un singolo campo password con bottone "Entra"; password corretta sblocca il sito per la durata della tab (sessionStorage), password sbagliata mostra un errore accessibile (aria-live) senza svelare suggerimenti
   4. Il README documenta esplicitamente che il gate è "soft privacy" (PBKDF2-SHA256 200k iter via WebCrypto), include l'upgrade path AES-GCM, e spiega come configurare custom domain + `BASE_URL`
   5. CI esegue lint, format e type-check; un build rotto blocca il deploy
-**Plans**: TBD
+**Plans**: 5 plans
+  - [ ] 01-skeleton-PLAN.md — Vite/Vue/TS scaffold, ESLint+Prettier, Pinia, router skeleton, tokens.css, Vitest+Playwright dev-deps + Wave 0 stubs
+  - [ ] 02-vite-base-PLAN.md — vite.config.ts env-driven base + post-build SPA fallback (404.html + .nojekyll)
+  - [ ] 03-soft-gate-PLAN.md — gate-set CLI, WebCrypto verifier, Pinia store, router guard, GateView per UI-SPEC, e2e tests
+  - [ ] 04-deploy-PLAN.md — GitHub Actions workflow + manual live-Pages verification checkpoint
+  - [ ] 05-docs-PLAN.md — README with privacy disclaimer + AES-GCM upgrade + VITE_BASE/CNAME instructions
 **UI hint**: yes
 
 ### Phase 2: Content Pipeline + Manifest Validation
