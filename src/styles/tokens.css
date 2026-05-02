@@ -1,0 +1,79 @@
+:root {
+  /* Color — soffitta notturna palette (UI-SPEC §Color) */
+  --c-soot-900: #0e0b08;
+  --c-soot-800: #15110d;
+  --c-soot-700: #1f1a14;
+  --c-wood-600: #2a2118;
+  --c-paper-100: #e9dfc9;
+  --c-paper-200: #d6c8a8;
+  --c-ink-900: #1a140c;
+  --c-ink-700: #3a2c1c;
+  --c-amber-500: #e8b057;
+  --c-amber-300: #f4d08a;
+  --c-focus: #f2d9a4;
+  --c-error: #a85a3a;
+
+  /* Spacing scale (UI-SPEC §Spacing Scale) */
+  --sp-xs: 0.25rem;
+  --sp-sm: 0.5rem;
+  --sp-md: 1rem;
+  --sp-lg: 1.5rem;
+  --sp-xl: 2rem;
+  --sp-2xl: 3rem;
+  --sp-3xl: 4rem;
+
+  /* Typography (UI-SPEC §Typography) */
+  --fs-body: clamp(16px, 1rem + 0.2vw, 18px);
+  --fs-label: clamp(13px, 0.825rem + 0.1vw, 14px);
+
+  /* Radius (UI-SPEC §Radius) */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+
+  /* Shadow (UI-SPEC §Shadow) */
+  --shadow-paper: 0 1px 0 rgba(214, 200, 168, 0.15), 0 8px 20px -8px rgba(0, 0, 0, 0.6),
+    0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-candle-cold: 0 6px 18px -6px rgba(0, 0, 0, 0.7);
+  --shadow-candle-warm: 0 0 60px 8px rgba(244, 208, 138, 0.35), 0 6px 18px -6px rgba(0, 0, 0, 0.7);
+
+  /* Blur */
+  --blur-soft: blur(0.5px);
+
+  /* Motion (UI-SPEC §Motion Tokens) */
+  --motion-duration-instant: 0ms;
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 280ms;
+  --motion-duration-slow: 400ms;
+  --motion-duration-deliberate: 800ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-shake-amplitude: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+    /* --motion-duration-deliberate kept at 800ms — accessibility-orthogonal (UI-SPEC §Motion Tokens) */
+    --motion-ease-out: linear;
+    --motion-ease-soft: linear;
+    --motion-shake-amplitude: 0;
+  }
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  background: var(--c-soot-800);
+  color: var(--c-paper-100);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  hyphens: auto;
+}
+
+html {
+  color-scheme: dark;
+}
