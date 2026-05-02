@@ -22,9 +22,14 @@
   --sp-2xl: 3rem;
   --sp-3xl: 4rem;
 
-  /* Typography (UI-SPEC §Typography) */
-  --fs-body: clamp(16px, 1rem + 0.2vw, 18px);
-  --fs-label: clamp(13px, 0.825rem + 0.1vw, 14px);
+  /* User-controllable text scale (A−/A+ controls). Default 1, range 0.85..1.6. */
+  --user-font-scale: 1;
+
+  /* Typography (UI-SPEC §Typography) — multiplied by --user-font-scale */
+  --fs-body: calc(clamp(16px, 1rem + 0.2vw, 18px) * var(--user-font-scale));
+  --fs-label: calc(clamp(13px, 0.825rem + 0.1vw, 14px) * var(--user-font-scale));
+  --fs-poem: calc(clamp(15px, 1vw + 10px, 19px) * var(--user-font-scale));
+  --fs-poem-title: calc(clamp(20px, 2vw + 12px, 30px) * var(--user-font-scale));
 
   /* Radius (UI-SPEC §Radius) */
   --radius-none: 0;

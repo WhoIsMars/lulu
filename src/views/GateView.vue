@@ -3,6 +3,7 @@ import { ref, useTemplateRef, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGate } from '@/composables/useGate'
 import { useReducedMotion } from '@/composables/useReducedMotion'
+import ZoomControls from '@/components/ZoomControls.vue'
 
 const router = useRouter()
 const { verify } = useGate()
@@ -52,6 +53,11 @@ function onInput(): void {
     :data-state="state"
     :data-rm="reducedMotion ? 'true' : 'false'"
   >
+    <!-- top-right: zoom controls (accessibility) -->
+    <div class="gate__controls">
+      <ZoomControls />
+    </div>
+
     <!-- atmospheric layers, decorative only -->
     <div class="gate__atmosphere" aria-hidden="true">
       <div class="gate__wall"></div>
@@ -349,6 +355,13 @@ function onInput(): void {
   --gate-letter-h: clamp(180px, 46vw, 260px);
   --gate-flap-h: calc(var(--gate-letter-h) * 0.62);
   --gate-anim-open: 700ms;
+}
+
+.gate__controls {
+  position: absolute;
+  z-index: 10;
+  top: clamp(var(--sp-sm), 2vh, var(--sp-md));
+  right: clamp(var(--sp-sm), 2vw, var(--sp-md));
 }
 
 /* ───────── outer ───────── */

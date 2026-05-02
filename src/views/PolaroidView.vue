@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useReducedMotion } from '@/composables/useReducedMotion'
-import { getPoem, getNextPoem, getPrevPoem } from '@/data/poems'
+import { getPoem } from '@/data/poems'
+import ZoomControls from '@/components/ZoomControls.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,10 +15,6 @@ const poem = computed(() => getPoem(slug.value))
 const flipped = ref(false)
 const baseUrl = import.meta.env.BASE_URL
 
-watch(slug, () => {
-  flipped.value = false
-})
-
 function close(): void {
   void router.push({ name: 'home' })
 }
@@ -26,27 +23,22 @@ function flip(): void {
   flipped.value = !flipped.value
 }
 
-function goNext(): void {
-  const next = getNextPoem(slug.value)
-  if (next) void router.replace({ name: 'polaroid', params: { slug: next.slug } })
-}
-
-function goPrev(): void {
-  const prev = getPrevPoem(slug.value)
-  if (prev) void router.replace({ name: 'polaroid', params: { slug: prev.slug } })
-}
-
 function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') {
     close()
-  } else if (e.key === 'ArrowRight') {
-    goNext()
-  } else if (e.key === 'ArrowLeft') {
-    goPrev()
   } else if (e.key === ' ' || e.key === 'Enter') {
-    // only if focus is the flip button — already handled natively
+    /* native button handles this when focused */
   }
 }
+
+function onBackdropClick(e: MouseEvent): void {
+  // close only if the click is on the backdrop itself, not the card
+  if (e.target === e.currentTarget) close()
+}
+
+const stanzas = computed(() =>
+  (poem.value?.body ?? '').split(/\n\s*\n/).filter(Boolean),
+)
 
 onMounted(() => window.addEventListener('keydown', onKey))
 onUnmounted(() => window.removeEventListener('keydown', onKey))
@@ -56,7 +48,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   <main
     class="pview"
     :data-rm="reducedMotion ? 'true' : 'false'"
+    :data-flipped="flipped ? 'true' : 'false'"
     :aria-label="poem ? `${poem.title}, ${poem.date}` : 'polaroid'"
+    @click="onBackdropClick"
   >
     <div class="pview__atmosphere" aria-hidden="true">
       <div class="pview__bg"></div>
@@ -83,46 +77,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       <span class="pview__close-label">indietro</span>
     </button>
 
-    <button
-      class="pview__nav pview__nav--prev"
-      type="button"
-      aria-label="poesia precedente"
-      @click="goPrev"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path
-          d="M 15 6 L 9 12 L 15 18"
-          stroke="currentColor"
-          stroke-width="1.4"
-          fill="none"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-    <button
-      class="pview__nav pview__nav--next"
-      type="button"
-      aria-label="poesia successiva"
-      @click="goNext"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path
-          d="M 9 6 L 15 12 L 9 18"
-          stroke="currentColor"
-          stroke-width="1.4"
-          fill="none"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
+    <div class="pview__controls">
+      <ZoomControls />
+    </div>
 
-    <div class="pview__stage">
+    <div class="pview__stage" @click.stop>
       <div
         class="pview__card"
         :class="{ 'pview__card--flipped': flipped }"
-        :data-rm="reducedMotion ? 'true' : 'false'"
       >
         <!-- FRONT — la foto della polaroid -->
         <div class="pview__face pview__face--front">
@@ -130,7 +92,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
             <img
               v-if="poem"
               :src="`${baseUrl}photos/${poem.file}`"
-              :alt="poem.title"
+              :alt="poem.alt ?? poem.title"
               decoding="async"
             />
             <span class="pview__shine" aria-hidden="true"></span>
@@ -141,7 +103,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
           </div>
         </div>
 
-        <!-- BACK — la poesia scritta -->
+        <!-- BACK — la poesia -->
         <div class="pview__face pview__face--back">
           <article class="pview__poem">
             <header class="pview__poem-header">
@@ -150,17 +112,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
             </header>
             <div class="pview__poem-body">
               <p
-                v-for="(stanza, i) in (poem?.body ?? '').split(/\n\s*\n/).filter(Boolean)"
+                v-for="(stanza, i) in stanzas"
                 :key="i"
                 class="pview__poem-stanza"
               >
-                <span
+                <template
                   v-for="(line, j) in stanza.split('\n')"
                   :key="j"
-                  class="pview__poem-line"
                 >
-                  {{ line }}<br />
-                </span>
+                  {{ line
+                  }}<br v-if="j < stanza.split('\n').length - 1" />
+                </template>
               </p>
             </div>
           </article>
@@ -171,6 +133,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         class="pview__flip-btn"
         type="button"
         :aria-pressed="flipped"
+        :aria-label="flipped ? 'mostra la foto' : 'gira la polaroid per leggere la poesia'"
         @click="flip"
       >
         <span class="pview__flip-word">{{ flipped ? 'foto' : 'gira' }}</span>
@@ -181,25 +144,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 <style scoped>
 .pview {
-  --card-w: clamp(280px, 60vw, 460px);
+  --card-w: clamp(240px, 56vw, 380px);
   --card-h: calc(var(--card-w) * 1.22);
   --card-photo-h: calc(var(--card-w) * 0.92);
-  --back-w: clamp(320px, 64vw, 520px);
-  --back-h: clamp(440px, 72vh, 720px);
+  --back-w: clamp(280px, 60vw, 460px);
+  --back-h: clamp(380px, 78dvh, 640px);
   --grain-opacity: 0.045;
   --vignette-strength: 0.85;
+  --flip-duration: 900ms;
+  --flip-ease: cubic-bezier(0.83, 0, 0.17, 1);
 }
 
 .pview {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--c-soot-900);
   color: var(--c-paper-100);
-  overflow: hidden;
 }
 
-/* atmosphere */
 .pview__atmosphere {
   position: absolute;
   inset: 0;
@@ -209,19 +174,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 .pview__bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    ellipse 80% 70% at 50% 35%,
-    var(--c-soot-700) 0%,
-    var(--c-soot-800) 55%,
-    var(--c-soot-900) 100%
-  );
+  background:
+    radial-gradient(
+      ellipse 30% 18% at 50% 105%,
+      rgba(244, 208, 138, 0.08) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 80% 70% at 50% 35%,
+      var(--c-soot-700) 0%,
+      var(--c-soot-800) 55%,
+      var(--c-soot-900) 100%
+    );
 }
 .pview__vignette {
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    ellipse 70% 60% at 50% 45%,
-    rgba(0, 0, 0, 0) 35%,
+    ellipse 70% 60% at 50% 50%,
+    rgba(0, 0, 0, 0) 30%,
     rgba(0, 0, 0, calc(0.55 * var(--vignette-strength))) 75%,
     rgba(0, 0, 0, calc(0.85 * var(--vignette-strength))) 100%
   );
@@ -235,11 +206,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   mix-blend-mode: overlay;
 }
 
-/* close button (top-left) + nav (sides) */
-.pview__close,
-.pview__nav {
+/* close button */
+.pview__close {
   position: fixed;
-  z-index: 5;
+  z-index: 10;
+  top: clamp(var(--sp-md), 3vh, var(--sp-xl));
+  left: clamp(var(--sp-md), 3vw, var(--sp-xl));
   appearance: none;
   background: transparent;
   border: 0;
@@ -256,56 +228,50 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   letter-spacing: 0.04em;
   transition: color 180ms ease-out;
 }
-.pview__close svg,
-.pview__nav svg {
+.pview__close svg {
   width: 22px;
   height: 22px;
   display: block;
 }
-.pview__close {
-  top: clamp(var(--sp-md), 3vh, var(--sp-xl));
-  left: clamp(var(--sp-md), 3vw, var(--sp-xl));
-}
-.pview__nav--prev {
-  left: clamp(var(--sp-sm), 2vw, var(--sp-xl));
-  top: 50%;
-  transform: translateY(-50%);
-}
-.pview__nav--next {
-  right: clamp(var(--sp-sm), 2vw, var(--sp-xl));
-  top: 50%;
-  transform: translateY(-50%);
-}
 .pview__close:hover,
-.pview__nav:hover,
-.pview__close:focus-visible,
-.pview__nav:focus-visible {
+.pview__close:focus-visible {
   color: var(--c-paper-100);
 }
-.pview__close:focus-visible,
-.pview__nav:focus-visible {
+.pview__close:focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 4px;
+  border-radius: 2px;
 }
 .pview__close-label {
   display: inline;
 }
 @media (max-width: 540px) {
-  .pview__close-label { display: none; }
+  .pview__close-label {
+    display: none;
+  }
 }
 
-/* stage holds the card + flip button */
+/* zoom controls */
+.pview__controls {
+  position: fixed;
+  z-index: 10;
+  top: clamp(var(--sp-sm), 2vh, var(--sp-md));
+  right: clamp(var(--sp-sm), 2vw, var(--sp-md));
+}
+
+/* stage */
 .pview__stage {
   position: relative;
   z-index: 1;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
   align-items: center;
-  justify-content: center;
-  gap: var(--sp-xl);
-  padding: clamp(60px, 10vh, 100px) var(--sp-md);
-  perspective: 1400px;
+  justify-items: center;
+  gap: clamp(var(--sp-md), 3vh, var(--sp-xl));
+  padding: clamp(72px, 12vh, 120px) var(--sp-md) clamp(40px, 6vh, 64px);
+  perspective: 1600px;
 }
 
 /* the flippable card */
@@ -313,13 +279,20 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   position: relative;
   width: var(--card-w);
   height: var(--card-h);
+  max-height: calc(100dvh - 200px);
   transform-style: preserve-3d;
   transform: rotateY(0deg);
-  transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1), width 400ms, height 400ms;
+  transition:
+    transform var(--flip-duration) var(--flip-ease),
+    width 500ms var(--flip-ease),
+    height 500ms var(--flip-ease),
+    max-height 500ms var(--flip-ease);
+  filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.7));
 }
 .pview__card--flipped {
   width: var(--back-w);
   height: var(--back-h);
+  max-height: calc(100dvh - 180px);
   transform: rotateY(180deg);
 }
 
@@ -335,7 +308,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     0 6px 14px -2px rgba(0, 0, 0, 0.55);
 }
 
-/* FRONT face — polaroid */
+/* FRONT */
 .pview__face--front {
   background: linear-gradient(to bottom, #f4ecd6 0%, var(--c-paper-100) 35%, #ddd0b0 100%);
   padding: 6% 6% 0 6%;
@@ -390,24 +363,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 }
 .pview__caption-title {
   display: block;
-  font: 400 clamp(14px, 1.4vw + 8px, 22px) / 1.2 'Cormorant Garamond', serif;
+  font:
+    400 calc(clamp(14px, 1.4vw + 8px, 22px) * var(--user-font-scale, 1)) / 1.2 'Cormorant Garamond',
+    serif;
 }
 .pview__caption-date {
   display: block;
   margin-top: 4px;
-  font: 400 clamp(11px, 0.9vw + 6px, 14px) / 1.2 'Cormorant Garamond', serif;
+  font:
+    400 calc(clamp(11px, 0.9vw + 6px, 14px) * var(--user-font-scale, 1)) / 1.2 'Cormorant Garamond',
+    serif;
   font-style: italic;
   opacity: 0.65;
 }
 
-/* BACK face — letter / poem */
+/* BACK */
 .pview__face--back {
   background: linear-gradient(to bottom, #f0e6d0 0%, var(--c-paper-100) 35%, #e3d6b8 100%);
   transform: rotateY(180deg);
-  padding: clamp(var(--sp-xl), 5vw, var(--sp-3xl));
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(58, 44, 28, 0.3) transparent;
+  padding: clamp(var(--sp-md), 3vw, var(--sp-2xl));
+  display: flex;
+  flex-direction: column;
 }
 .pview__face--back::before {
   content: '';
@@ -424,30 +400,51 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   position: relative;
   z-index: 1;
   color: var(--c-ink-900);
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .pview__poem-header {
   text-align: center;
-  margin-bottom: var(--sp-xl);
-  padding-bottom: var(--sp-md);
+  margin-bottom: clamp(var(--sp-sm), 2vh, var(--sp-md));
+  padding-bottom: var(--sp-sm);
   border-bottom: 1px solid rgba(58, 44, 28, 0.18);
+  flex: 0 0 auto;
 }
 .pview__poem-title {
   margin: 0;
-  font: 500 clamp(20px, 2vw + 12px, 30px) / 1.2 'Cormorant Garamond', serif;
+  font:
+    500 var(--fs-poem-title, calc(clamp(18px, 1.7vw + 11px, 28px) * var(--user-font-scale, 1))) /
+    1.2 'Cormorant Garamond',
+    serif;
   letter-spacing: 0.01em;
 }
 .pview__poem-date {
   margin: var(--sp-xs) 0 0;
-  font: 400 clamp(12px, 0.9vw + 6px, 15px) / 1.3 'Cormorant Garamond', serif;
+  font:
+    400 calc(clamp(11px, 0.8vw + 6px, 14px) * var(--user-font-scale, 1)) / 1.3 'Cormorant Garamond',
+    serif;
   font-style: italic;
   color: var(--c-ink-700);
   opacity: 0.7;
 }
 
 .pview__poem-body {
-  font: 400 clamp(15px, 1vw + 10px, 19px) / 1.7 'Cormorant Garamond', serif;
+  font:
+    400 var(--fs-poem, calc(clamp(14px, 0.9vw + 9px, 18px) * var(--user-font-scale, 1))) / 1.65
+      'Cormorant Garamond',
+    serif;
   letter-spacing: 0.005em;
   text-align: center;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 0 var(--sp-xs);
+}
+.pview__poem-body::-webkit-scrollbar {
+  display: none;
 }
 .pview__poem-stanza {
   margin: 0 0 var(--sp-md);
@@ -465,22 +462,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   cursor: pointer;
   padding: var(--sp-sm) var(--sp-xl);
   min-height: 44px;
-  font: 400 clamp(16px, 1vw + 10px, 22px) / 1 'Italianno', cursive;
+  font: 400 calc(clamp(20px, 1.4vw + 14px, 30px) * var(--user-font-scale, 1)) / 1 'Italianno', cursive;
   letter-spacing: 0.02em;
-  transition: color 180ms ease-out;
+  transition: color 200ms ease-out;
   position: relative;
+  align-self: center;
 }
 .pview__flip-btn::after {
   content: '';
   position: absolute;
   left: 50%;
   bottom: 4px;
-  width: 50%;
+  width: 60%;
   height: 1px;
   background: currentColor;
-  transform: translateX(-50%) scaleX(0.6);
-  opacity: 0.5;
-  transition: transform 200ms, opacity 200ms;
+  transform: translateX(-50%) scaleX(0.5);
+  opacity: 0.4;
+  transition:
+    transform 220ms ease-out,
+    opacity 220ms ease-out;
 }
 .pview__flip-btn:hover,
 .pview__flip-btn:focus-visible {
@@ -497,7 +497,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   border-radius: 2px;
 }
 
-/* reduced-motion: kill the 3D flip, swap faces instantly */
+/* reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .pview__card {
     transition: none !important;
@@ -511,7 +511,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     display: none;
   }
   .pview__card--flipped .pview__face--back {
-    display: block;
+    display: flex;
   }
 }
 </style>
