@@ -120,7 +120,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
           </div>
           <div class="pview__peel" aria-hidden="true">
             <div class="pview__peel-corner"></div>
-            <div class="pview__peel-hint">gira</div>
           </div>
         </div>
 
@@ -150,7 +149,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
           </article>
           <div class="pview__peel pview__peel--back" aria-hidden="true">
             <div class="pview__peel-corner"></div>
-            <div class="pview__peel-hint">foto</div>
           </div>
         </div>
       </div>
@@ -365,45 +363,29 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     0 0 0 3px var(--c-focus);
 }
 
-/* ── FACES — divs with bulletproof 3D guards ──
- * iOS Safari has a long-standing bug where backface-visibility:hidden alone
- * isn't reliable when faces share the same Z plane. Three-layer guard:
- *   1. backface-visibility (the spec'd way)
- *   2. translateZ(1px) on the front to lift it above the back, removing
- *      z-fighting; back has translateZ(0) so it sits behind
- *   3. opacity-swap synchronized with the flip midpoint as a hard safety net
- *      (each face becomes opacity:0 when it's pointing AWAY from the viewer)
- */
+/* ── FACES ── */
 .pview__face {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: block;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  will-change: transform, opacity;
+  will-change: transform;
   border-radius: 1px;
   box-shadow:
     0 1px 0 rgba(255, 245, 220, 0.3),
     0 24px 50px -10px rgba(0, 0, 0, 0.85),
     0 6px 14px -2px rgba(0, 0, 0, 0.55);
-  /* opacity transitions instantly at the flip midpoint */
-  transition:
-    box-shadow 320ms ease-out,
-    opacity 0s linear var(--flip-half, 550ms);
+  transition: box-shadow 320ms ease-out;
 }
 
-/* FRONT — translateZ(1px) lifts above back to prevent z-fighting */
+/* FRONT */
 .pview__face--front {
   background: linear-gradient(to bottom, #f4ecd6 0%, var(--c-paper-100) 35%, #ddd0b0 100%);
   padding: 6% 6% 0 6%;
-  transform: translateZ(1px);
-  -webkit-transform: translateZ(1px);
-  opacity: 1;
-}
-/* SAFETY NET — when card flipped, front becomes opacity 0 at flip midpoint
-   so even if backface-visibility fails on iOS, you can't see the front. */
-.pview__card--flipped .pview__face--front {
-  opacity: 0;
 }
 .pview__face--front::before {
   content: '';
@@ -539,21 +521,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   }
 }
 
-/* BACK — rotateY(180deg) so it faces the viewer when card itself rotates 180.
-   translateZ(0) keeps it BEHIND the front, so when card is unflipped you
-   can't see it. opacity 0 initially is the safety net for iOS. */
+/* BACK — rotated 180° so when card itself rotates 180° the back faces forward */
 .pview__face--back {
   background: linear-gradient(to bottom, #f0e6d0 0%, var(--c-paper-100) 35%, #e3d6b8 100%);
-  transform: rotateY(180deg) translateZ(1px);
-  -webkit-transform: rotateY(180deg) translateZ(1px);
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
   padding: clamp(var(--sp-md), 3vw, var(--sp-2xl));
   display: flex;
   flex-direction: column;
-  opacity: 0;
-}
-/* SAFETY NET — when flipped, back fades to opacity 1 at midpoint */
-.pview__card--flipped .pview__face--back {
-  opacity: 1;
 }
 .pview__face--back::before {
   content: '';
