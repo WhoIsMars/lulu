@@ -43,14 +43,17 @@ const { increase, decrease, reset, canIncrease, canDecrease, scale } = useTextSc
 .zoom {
   display: inline-flex;
   align-items: stretch;
-  gap: 1px;
-  padding: 2px;
-  border-radius: 2px;
-  background: linear-gradient(to bottom, rgba(58, 44, 28, 0.55) 0%, rgba(26, 20, 12, 0.7) 100%);
+  gap: 2px;
+  padding: 4px;
+  border-radius: 4px;
+  background: linear-gradient(to bottom, rgba(58, 44, 28, 0.65) 0%, rgba(15, 11, 8, 0.85) 100%);
+  border: 1px solid rgba(244, 208, 138, 0.22);
   box-shadow:
-    inset 0 1px 0 rgba(255, 245, 220, 0.06),
-    0 4px 12px -4px rgba(0, 0, 0, 0.6);
-  /* not affected by user font scale (controls the scale, would create feedback loop) */
+    inset 0 1px 0 rgba(255, 245, 220, 0.08),
+    0 6px 18px -4px rgba(0, 0, 0, 0.7),
+    0 2px 6px -1px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  /* fixed pixel font-size so the controls themselves don't scale (no feedback loop) */
   font-size: 14px;
 }
 
@@ -58,28 +61,30 @@ const { increase, decrease, reset, canIncrease, canDecrease, scale } = useTextSc
   appearance: none;
   background: linear-gradient(to bottom, #ebdcb8 0%, var(--c-paper-200) 60%, #c8b694 100%);
   border: 0;
-  border-radius: 1px;
-  min-width: 36px;
-  min-height: 36px;
-  padding: 0 var(--sp-sm);
+  border-radius: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
   color: var(--c-ink-900);
   cursor: pointer;
   font:
-    400 14px / 1 'Cormorant Garamond',
+    500 16px / 1 'Cormorant Garamond',
     serif;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition:
-    background 150ms ease-out,
-    transform 150ms ease-out;
+    background 180ms ease-out,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms ease-out;
   position: relative;
 }
 @media (min-width: 768px) {
   .zoom__btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
+    font-size: 17px;
   }
 }
 .zoom__btn::before {
@@ -94,8 +99,12 @@ const { increase, decrease, reset, canIncrease, canDecrease, scale } = useTextSc
   pointer-events: none;
 }
 .zoom__btn:hover:not(:disabled) {
-  background: linear-gradient(to bottom, #f1e3c2 0%, var(--c-paper-100) 60%, #d6c2a0 100%);
-  transform: translateY(-1px);
+  background: linear-gradient(to bottom, #f3e6c8 0%, var(--c-paper-100) 60%, #d6c2a0 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.5);
+}
+.zoom__btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 .zoom__btn:focus-visible {
   outline: 2px solid var(--c-focus);
@@ -104,13 +113,20 @@ const { increase, decrease, reset, canIncrease, canDecrease, scale } = useTextSc
 }
 .zoom__btn:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.4;
+  filter: grayscale(0.3);
 }
 .zoom__btn--reset {
-  min-width: 48px;
-  font-size: 11px;
+  min-width: 60px;
+  font-size: 12px;
   font-style: italic;
   color: var(--c-ink-700);
+}
+@media (min-width: 768px) {
+  .zoom__btn--reset {
+    min-width: 64px;
+    font-size: 13px;
+  }
 }
 .zoom__glyph,
 .zoom__pct {

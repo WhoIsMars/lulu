@@ -12,10 +12,15 @@ usePointerLight()
 
 const baseUrl = import.meta.env.BASE_URL
 
-/** Build ropes from manifest data — group by `rope` index. */
-const ropeCount = 4
-const ropes: Poem[][] = Array.from({ length: ropeCount }, (_, i) =>
-  poems.filter((p) => p.rope === i),
+/**
+ * Layout: 3 ropes × 5 polaroids each, derived by chronological index from the
+ * manifest. The manifest's per-entry `rope` field is ignored here in favor of
+ * an even visual distribution (5+5+5 reads better than 4+4+4+3).
+ */
+const ROPE_COUNT = 3
+const POLAROIDS_PER_ROPE = 5
+const ropes: Poem[][] = Array.from({ length: ROPE_COUNT }, (_, i) =>
+  poems.slice(i * POLAROIDS_PER_ROPE, (i + 1) * POLAROIDS_PER_ROPE),
 )
 
 /* ── narrow-viewport carousel state ── */
@@ -28,7 +33,7 @@ function checkNarrow(): void {
 }
 
 function setActiveRope(i: number): void {
-  activeRope.value = Math.max(0, Math.min(ropeCount - 1, i))
+  activeRope.value = Math.max(0, Math.min(ROPE_COUNT - 1, i))
 }
 
 const totalRopes = computed(() => ropes.length)
@@ -239,13 +244,17 @@ function openPolaroid(p: Poem): void {
 
 <style scoped>
 .home {
-  --light-radius: clamp(160px, 26vw, 280px);
-  --light-soft: clamp(220px, 34vw, 380px);
+  --light-radius: clamp(10rem, 26vw, 18rem);
+  --light-soft: clamp(14rem, 34vw, 24rem);
   --darkness-floor: 0.93;
   --darkness-floor-touch: 0.96;
-  --polaroid-w: clamp(96px, 11vw, 152px);
-  --polaroid-h: calc(var(--polaroid-w) * 1.22);
-  --polaroid-photo-h: calc(var(--polaroid-w) * 0.92);
+  /* Polaroid sized in rem so user zoom (--user-font-scale on root) magnifies them.
+     3 ropes × 5 polaroids = bigger card than the previous 4×4 layout. */
+  --polaroid-w: clamp(7rem, 14vw, 11rem);
+  --polaroid-h: calc(var(--polaroid-w) * 1.24);
+  --polaroid-photo-h: calc(var(--polaroid-w) * 0.94);
+  --rope-gap-h: clamp(2rem, 5vw, 4rem);
+  --rope-gap-v: clamp(1.5rem, 6vh, 3.5rem);
   --grain-opacity: 0.05;
   --moonbeam-opacity: 0.075;
   --dust-opacity: 0.55;
@@ -262,9 +271,16 @@ function openPolaroid(p: Poem): void {
   background: var(--c-soot-900);
   cursor: none;
 }
+/* Hide native cursor on EVERY descendant — child elements with their own
+   cursor rule (e.g., button cursor: pointer) would otherwise reveal it. */
+.home,
+.home * {
+  cursor: none !important;
+}
 @media (pointer: coarse) {
-  .home {
-    cursor: auto;
+  .home,
+  .home * {
+    cursor: auto !important;
   }
 }
 
@@ -492,8 +508,9 @@ function openPolaroid(p: Poem): void {
   flex-direction: column;
   justify-content: space-evenly;
   align-items: center;
-  padding: clamp(36px, 8vh, 72px) clamp(var(--sp-md), 3vw, var(--sp-2xl))
-    clamp(40px, 7vh, 80px);
+  padding: clamp(3rem, 8vh, 5.5rem) clamp(var(--sp-md), 3vw, var(--sp-2xl))
+    clamp(2.5rem, 6vh, 4.5rem);
+  gap: var(--rope-gap-v);
   pointer-events: auto;
 }
 
@@ -528,7 +545,7 @@ function openPolaroid(p: Poem): void {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: clamp(var(--sp-md), 3vw, var(--sp-2xl));
+  gap: var(--rope-gap-h);
   width: 100%;
   flex-wrap: nowrap;
 }

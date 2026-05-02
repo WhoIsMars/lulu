@@ -68,6 +68,15 @@
   }
 }
 
+/* Root font-size scaling — A−/A+ controls scale rem units everywhere.
+ * 16px is the browser default; multiplying it propagates to every rem-based
+ * dimension (spacing tokens, polaroid widths declared in rem, line-heights),
+ * giving real layout magnification, not just text size. */
+html {
+  font-size: calc(16px * var(--user-font-scale, 1));
+  color-scheme: dark;
+}
+
 html,
 body,
 #app {
@@ -77,8 +86,4 @@ body,
   color: var(--c-paper-100);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   hyphens: auto;
-}
-
-html {
-  color-scheme: dark;
 }
