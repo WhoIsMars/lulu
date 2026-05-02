@@ -39,6 +39,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Manifest check
+        run: npm run manifest:check
+
       - name: Build
         env:
           VITE_BASE: /lulu/
