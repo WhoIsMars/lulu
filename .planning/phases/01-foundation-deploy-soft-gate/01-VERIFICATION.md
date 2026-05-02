@@ -1,0 +1,130 @@
+---
+phase: 01-foundation-deploy-soft-gate
+verified: 2026-05-02T00:00:00Z
+status: passed
+score: 12/12 must-haves verified
+overrides_applied: 0
+re_verification:
+  previous_status: none
+  previous_score: n/a
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
+---
+
+# Phase 1: Foundation + Deploy + Soft Gate — Verification Report
+
+**Phase Goal:** *"Un sito vuoto e protetto da password è già live su GitHub Pages — base path, SPA fallback, e gate funzionano insieme su URL reale prima che qualunque feature sia scritta."*
+
+**Verified:** 2026-05-02
+**Status:** PASSED
+**Re-verification:** No (initial)
+**Live URL confirmed by owner:** https://whoismars.github.io/lulu/
+
+## Goal Achievement
+
+The phase goal is fully delivered. A skeleton SPA is live on GitHub Pages, served at `/lulu/` with correct asset paths, password-gated via PBKDF2-SHA256 200k WebCrypto, with SPA fallback (`404.html` + `.nojekyll`) and a CI pipeline that lint/typecheck/test/build/deploys on every push to `main`.
+
+### Observable Truths (ROADMAP §Phase 1 Success Criteria)
+
+| # | Truth | Status | Evidence |
+|---|-------|--------|----------|
+| 1 | Push to `main` deploys to Pages, URL serves without white screen / 404 assets, base path correct for project page and custom domain | VERIFIED | `.github/workflows/deploy.yml` triggers on `push: branches:[main]`, builds with `VITE_BASE=/lulu/`, deploys via `actions/deploy-pages@v5`. `vite.config.ts` reads `env.VITE_BASE ?? '/'`. Live URL confirmed by owner. `dist/index.html` references `/lulu/assets/...`. |
+| 2 | Reload of `/qualcosa` deep-link returns the SPA (not GH 404), via `404.html` + `.nojekyll` | VERIFIED | `scripts/post-build.mjs` copies `index.html → 404.html` and writes `.nojekyll`. Build output confirms both files present in `dist/`; `diff dist/index.html dist/404.html` is empty (MATCH). |
+| 3 | Home shows single password field + "Entra"; correct → unlocks per-tab; wrong → accessible aria-live error without hints | VERIFIED | `src/views/GateView.vue`: single `<input type="password">` + `<button type="submit">Entra</button>`; `<p role="status" aria-live="polite">` with generic "password non corretta" (no hint disclosure); focus stays on input via `inputEl.value?.select()`. `src/stores/gate.ts` uses `useStorage(NAMESPACE, false, sessionStorage)`. Owner confirms live gate works. |
+| 4 | README documents soft-privacy disclaimer (PBKDF2-SHA256 200k via WebCrypto), AES-GCM upgrade path, custom domain + `BASE_URL` config | VERIFIED | `README.md` §Privacy: "soft privacy" (1 hit), explicit "PBKDF2-SHA256, 200.000 iterazioni" + WebCrypto, AES-GCM upgrade (2 hits) tracked as PRIV-01 v2. §Custom domain (3 hits incl. `public/CNAME`, DNS A records, "Enforce HTTPS"). §URL di pubblicazione documents `VITE_BASE` (5 hits). |
+| 5 | CI runs lint, format-equivalent, type-check; broken build blocks deploy | VERIFIED | `deploy.yml` steps: Lint → Type-check → Unit tests → Build (with `VITE_BASE=/lulu/`) → Post-build → upload artifact → `deploy` job depends on `build`. Any non-zero exit aborts before deploy. `package.json` `build` chains `vue-tsc --noEmit && vite build && node scripts/post-build.mjs`. |
+
+**Score:** 5/5 success criteria verified.
+
+### Required Artifacts
+
+| Artifact | Expected | Status | Details |
+|----------|----------|--------|---------|
+| `vite.config.ts` | env-driven `base` | VERIFIED | `base: env.VITE_BASE ?? '/'` |
+| `scripts/post-build.mjs` | 404.html + .nojekyll | VERIFIED | Both written; verified in `dist/` |
+| `scripts/gate-set.mjs` | PBKDF2 200k salt+hash CLI | VERIFIED | NFC normalize, 16B salt, 32B hash, writes `src/gate.config.ts` with explicit threat-model comment |
+| `src/gate/crypto.ts` | WebCrypto verifier + constant-time compare | VERIFIED | NFC, PBKDF2-SHA256, constantTimeEqual via XOR-OR |
+| `src/stores/gate.ts` | Pinia store, sessionStorage `lulu:gate` | VERIFIED | Uses `@vueuse/core` `useStorage` with sessionStorage backend |
+| `src/composables/useGate.ts` | verify() with 800ms response floor | VERIFIED | `MIN_RESPONSE_MS = 800` floor (D-13) implemented |
+| `src/router/index.ts` | createWebHistory(BASE_URL) + guard | VERIFIED | Route guard redirects to `/gate` if `!gate.unlocked` |
+| `src/views/GateView.vue` | Password UI per UI-SPEC | VERIFIED | Single field, Entra, aria-live error, autocomplete current-password |
+| `.github/workflows/deploy.yml` | Push:main + actions/deploy-pages | VERIFIED | All steps present, concurrency group `pages` |
+| `README.md` | Soft-privacy + CNAME + VITE_BASE | VERIFIED | All required keywords present |
+
+### Key Link Verification
+
+| From | To | Via | Status | Details |
+|------|-----|-----|--------|---------|
+| GateView | useGate | `import { useGate } from '@/composables/useGate'` | WIRED | Submit handler calls `verify(value)`, awaits, routes to `home` on success |
+| useGate | crypto | `verifyPassword(rawInput, SALT_B64, HASH_B64, ITERATIONS)` | WIRED | Reads from `@/gate.config` (generated by gate-set CLI) |
+| useGate | store | `store.unlock()` on success | WIRED | Pinia store flips sessionStorage flag |
+| router | store | `gate.beforeEach` guard | WIRED | Redirects unprotected nav to `/gate` |
+| CI workflow | deploy-pages | `actions/deploy-pages@v5` after build artifact upload | WIRED | `deploy` job `needs: build`, fails-closed |
+| Build | post-build | `npm run build` chains `node scripts/post-build.mjs` | WIRED | Confirmed by `dist/404.html` + `dist/.nojekyll` after build |
+
+### Behavioral Spot-Checks (run live)
+
+| Check | Command | Result | Status |
+|-------|---------|--------|--------|
+| Lint passes | `npm run lint` | exit 0, no errors | PASS |
+| Type-check passes | `npm run typecheck` | exit 0, vue-tsc clean | PASS |
+| Build with VITE_BASE | `VITE_BASE=/lulu/ npm run build` | "✓ built in 222ms" + "post-build: 404.html + .nojekyll written to dist/" | PASS |
+| 404.html exists | `test -f dist/404.html` | present | PASS |
+| .nojekyll exists | `test -f dist/.nojekyll` | present | PASS |
+| 404.html === index.html | `diff dist/index.html dist/404.html` | identical | PASS |
+| Base path applied | `grep src= dist/index.html` | `/lulu/assets/index-*.js` | PASS |
+| README "soft privacy" | `grep -c "soft privacy"` | 1 | PASS |
+| README "AES-GCM" | `grep -c "AES-GCM"` | 2 | PASS |
+| README "VITE_BASE" | `grep -c "VITE_BASE"` | 5 | PASS |
+| README "CNAME" | `grep -c "CNAME"` | 3 | PASS |
+| Workflow uses deploy-pages | `grep -c "actions/deploy-pages"` | 2 | PASS |
+
+### Requirements Coverage (12/12)
+
+| REQ-ID | Description | Status | Evidence |
+|--------|-------------|--------|----------|
+| FOUND-01 | Vue 3.5 + Vite 8 + TS 6 with dev/build/preview | SATISFIED | `package.json` deps: vue 3.5.33, vite 8.0.10, typescript 6.0.3; scripts present |
+| FOUND-02 | Build loads on `/lulu/` (project) and `/` (custom domain), env-driven | SATISFIED | `vite.config.ts` `env.VITE_BASE ?? '/'`; live URL confirmed |
+| FOUND-03 | GitHub Actions workflow builds + deploys on push:main | SATISFIED | `deploy.yml` `on: push: branches:[main]` + `actions/deploy-pages@v5` |
+| FOUND-04 | SPA fallback: deep-link reload → no 404 | SATISFIED | `dist/404.html` (copy of index.html) + `dist/.nojekyll` |
+| FOUND-05 | Lint + format + type-check in CI | SATISFIED | ESLint v10 (flat), Prettier 3.8, vue-tsc; CI runs Lint + Type-check |
+| GATE-01 | Single password field + "Entra" button | SATISFIED | `GateView.vue` lines 274–328 |
+| GATE-02 | PBKDF2-SHA256 200k via WebCrypto, salt+hash committed | SATISFIED | `crypto.ts` + `gate-set.mjs` (`ITERATIONS = 200_000`, `KEY_BYTES = 32`) |
+| GATE-03 | Accessible error (aria-live), no hint leak, focus stays on field | SATISFIED | `<p role="status" aria-live="polite">` with generic "password non corretta"; `inputEl.value?.select()` keeps focus |
+| GATE-04 | sessionStorage unlock state | SATISFIED | `stores/gate.ts` uses `useStorage('lulu:gate', false, sessionStorage)` |
+| GATE-05 | README documents soft-privacy + AES-GCM upgrade | SATISFIED | README §Privacy explicit; gate-set.mjs writes threat-model comment into generated config |
+| DEPLOY-01 | Push:main → Actions → Pages via actions/deploy-pages | SATISFIED | `deploy.yml` complete |
+| DEPLOY-02 | README documents custom domain (CNAME, DNS) + BASE_URL | SATISFIED | README §"Configurare un custom domain" + §"URL di pubblicazione" |
+
+### Anti-Patterns Found
+
+None blocking. No TODO/FIXME/PLACEHOLDER patterns in Phase-1 critical files. The `HomeView.vue`/`PolaroidView.vue` exist with content beyond Phase-1 scope (see Scope Drift Forward) but do not contain stubs that mislead about Phase-1 deliverables.
+
+### Scope Drift Forward (informational, NOT a gap)
+
+The codebase has implemented work beyond Phase-1 scope:
+
+- **HomeView.vue + PolaroidView.vue + room/polaroid CSS** — territory of Phase 3 (Static Room + Polaroid Layout + Reading View). Phase 1 only required these to exist as stubs sufficient to validate SPA fallback; the implementation has gone further.
+- **Candle cursor / atmosphere on Gate** — gate decoration is in scope for Phase 1 UI-SPEC, but candle-following-pointer machinery is Phase 5 territory. The candle on the gate screen is decorative-only (CSS, no rAF loop), so it does not violate Phase 5 ownership.
+- **Photo mock content** — display of any photos is Phase 3+ territory. Already mocked.
+
+**Implication for downstream planning:** Phase 3 and (in part) Phase 5 may have less new work than originally scoped. Recommend the planner of Phase 3 audit existing `HomeView`/`PolaroidView`/styles before writing fresh PLAN.md files — they may need refactor + a11y audit + manifest-binding rather than greenfield implementation. Phase 5 candle-on-gate is decorative and does NOT preempt the candle reveal feature on the room.
+
+This drift does not block Phase 1 verification — all 12 REQ-IDs and 5 success criteria are observably satisfied independent of the overshoot.
+
+### Human Verification Required
+
+None for Phase-1 closure. The owner has already confirmed:
+- Live URL serves the site (https://whoismars.github.io/lulu/)
+- Password works
+- Gate functions as designed
+
+### Gaps Summary
+
+No gaps. Phase 1 is complete and APPROVED.
+
+---
+
+*Verified: 2026-05-02*
+*Verifier: Claude (gsd-verifier, opus-4-7-1m)*
