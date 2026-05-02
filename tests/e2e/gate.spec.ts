@@ -20,8 +20,16 @@ test.describe('gate (Wave 0 stubs)', () => {
     // Plan 03 wires this with a real password from gate.config.ts (set via gate:set).
   })
 
-  test.skip('deep-link refresh: /p/test renders without GitHub 404', async ({ page }) => {
-    await page.goto('/p/test')
+  test('deep-link refresh: /p/test renders without GitHub 404 (SPA fallback served via 404.html)', async ({
+    page,
+  }) => {
+    // Playwright webServer runs `npm run preview` after `VITE_BASE=/lulu/ npm run build`,
+    // so dist/404.html exists. Local preview maps unknown paths via SPA history fallback,
+    // which is the local equivalent of GH Pages' 404.html serve.
+    const resp = await page.goto('/p/anything')
+    expect(resp?.status()).toBeLessThan(500)
+    // Until Plan 03 wires the gate guard, /p/anything renders the placeholder PolaroidView ("—").
+    // After Plan 03, this redirects to GateView — so we tolerate either:
     await expect(page.locator('main')).toBeVisible()
   })
 })
