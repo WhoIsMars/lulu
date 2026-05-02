@@ -27,10 +27,19 @@ export function parsePoems(raw: string): ParsedPoem[] {
     .split(/^[—-]{2,}\s*$/gm)
     .map((b) => b.trim())
     .filter(Boolean)
-  const headerRe = /^[“"](.+?)[”"]\s*[-–—]\s*(.+?)$/m
+  // Header forms observed in poems.txt:
+  //   "Title" - 22/7/2025 | 17:38       (curly+dash)
+  //   "Title" 1/11/2025 | 3:31          (curly, no dash)
+  //   "Title" | 14/4/2026 - 00:42       (curly + pipe)
+  //   Title - 24/9 : 1:29               (no quotes)
+  // Quoted form: optional opening/closing smart or ASCII quote, separator may be -, –, —, |, or whitespace.
+  // Unquoted form: title is the first segment until ` - ` (with spaces), date is the rest.
+  const quotedHeaderRe = /^[“"](.+?)[”"]\s*[-–—|]?\s*(\S.+?)$/m
+  const unquotedHeaderRe = /^([A-Za-zÀ-ÿ][^\n"“”]*?)\s+[-–—]\s+(\S.+?)$/m
   const out: ParsedPoem[] = []
   for (const block of blocks) {
-    const m = block.match(headerRe)
+    let m = block.match(quotedHeaderRe)
+    if (!m) m = block.match(unquotedHeaderRe)
     if (!m) continue
     const title = m[1].trim()
     const date = m[2].trim()

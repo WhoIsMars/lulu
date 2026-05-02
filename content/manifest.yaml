@@ -1,0 +1,110 @@
+# content/manifest.yaml
+# Phase 2 (CONT-02): photo↔poem mapping. Validated at build by vite/manifest-loader.ts.
+# Order = chronological (first = top-left of room, last = bottom-right).
+# See .planning/notes/photos-naming-and-order.md for naming/order rules.
+# All photo filenames are case-sensitive (Linux CI breaks otherwise).
+
+- photo: Un_altro_sogno.JPG
+  poem: un-altro-sogno
+  alt: "Foto associata alla poesia 'Un altro sogno', luglio 2025"
+  rope: 0
+  rotation: -2.4
+  liftDelay: 0
+
+- photo: Luce.jpg
+  poem: luce
+  alt: "Foto associata alla poesia 'Luce', luglio 2025"
+  rope: 0
+  rotation: 1.8
+  liftDelay: 80
+
+- photo: Insulto.jpg
+  poem: insulto
+  alt: "Foto associata alla poesia 'Insulto', luglio 2025"
+  rope: 0
+  rotation: -1.2
+  liftDelay: 160
+
+- photo: Oltre.jpg
+  poem: oltre
+  alt: "Foto associata alla poesia 'Oltre', luglio 2025"
+  rope: 0
+  rotation: 2.6
+  liftDelay: 240
+
+- photo: Autoinganni.jpg
+  poem: autoinganni
+  alt: "Foto associata alla poesia 'Autoinganni', luglio 2025"
+  rope: 1
+  rotation: 1.4
+  liftDelay: 0
+
+- photo: Sincronizzati.JPG
+  poem: sincronizzati
+  alt: "Foto associata alla poesia 'Sincronizzati', luglio 2025"
+  rope: 1
+  rotation: -2.8
+  liftDelay: 80
+
+- photo: punizione.JPG
+  poem: punizione
+  alt: "Foto associata alla poesia 'Punizione', luglio 2025"
+  rope: 1
+  rotation: 0.8
+  liftDelay: 160
+
+- photo: Lasciare_senza_lasciti.JPG
+  poem: lasciare-senza-lasciti
+  alt: "Foto associata alla poesia 'Lasciare, senza lasciti', luglio 2025"
+  rope: 1
+  rotation: -1.6
+  liftDelay: 240
+
+- photo: Dubbio.JPG
+  poem: dubbio
+  alt: "Foto associata alla poesia 'Dubbio', agosto 2025"
+  rope: 2
+  rotation: 2.2
+  liftDelay: 0
+
+- photo: Silenzi.jpg
+  poem: silenzi
+  alt: "Foto associata alla poesia 'Silenzi', agosto 2025"
+  rope: 2
+  rotation: -1.0
+  liftDelay: 80
+
+- photo: I_tuoi_auto_sabotaggi.jpg
+  poem: i-tuoi-auto-sabotaggi
+  alt: "Foto associata alla poesia 'I tuoi auto sabotaggi', agosto 2025"
+  rope: 2
+  rotation: 1.6
+  liftDelay: 160
+
+- photo: Le_luci_delle_lucciole.JPG
+  poem: le-luci-delle-lucciole
+  alt: "Foto associata alla poesia 'Le luci delle lucciole', agosto 2025"
+  rope: 2
+  rotation: -2.4
+  liftDelay: 240
+
+- photo: …finché.jpg
+  poem: finche
+  alt: "Foto associata alla poesia '…finché', agosto 2025"
+  rope: 3
+  rotation: 1.2
+  liftDelay: 0
+
+- photo: ciò_che_non_dici.jpg
+  poem: cio-che-non-dici
+  alt: "Foto associata alla poesia 'ciò che non dici', agosto 2025"
+  rope: 3
+  rotation: -1.8
+  liftDelay: 80
+
+- photo: perdimi.JPG
+  poem: perdimi
+  alt: "Foto associata alla poesia 'perdimi', agosto 2025"
+  rope: 3
+  rotation: 2.0
+  liftDelay: 160
