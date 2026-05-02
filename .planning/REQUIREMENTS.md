@@ -130,12 +130,81 @@
 
 ## Traceability
 
-Mapped during roadmap creation.
+Each v1 requirement is mapped to exactly one phase in `.planning/ROADMAP.md`.
 
-**Coverage (pre-roadmap):**
-- v1 requirements: 50 total
-- Mapped to phases: 0 (pending roadmap)
+**Coverage:** 55/55 v1 requirements mapped ✓ — no orphans, no duplicates.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| GATE-01 | Phase 1 | Pending |
+| GATE-02 | Phase 1 | Pending |
+| GATE-03 | Phase 1 | Pending |
+| GATE-04 | Phase 1 | Pending |
+| GATE-05 | Phase 1 | Pending |
+| DEPLOY-01 | Phase 1 | Pending |
+| DEPLOY-02 | Phase 1 | Pending |
+| CONT-01 | Phase 2 | Pending |
+| CONT-02 | Phase 2 | Pending |
+| CONT-03 | Phase 2 | Pending |
+| CONT-04 | Phase 2 | Pending |
+| ROOM-01 | Phase 3 | Pending |
+| ROOM-02 | Phase 3 | Pending |
+| ROOM-03 | Phase 3 | Pending |
+| ROOM-04 | Phase 3 | Pending |
+| ROOM-05 | Phase 3 | Pending |
+| FLIP-01 | Phase 3 | Pending |
+| FLIP-05 | Phase 3 | Pending |
+| FLIP-06 | Phase 3 | Pending |
+| POEM-01 | Phase 3 | Pending |
+| POEM-02 | Phase 3 | Pending |
+| POEM-03 | Phase 3 | Pending |
+| A11Y-01 | Phase 3 | Pending |
+| A11Y-04 | Phase 3 | Pending |
+| A11Y-05 | Phase 3 | Pending |
+| ASSET-01 | Phase 4 | Pending |
+| ASSET-02 | Phase 4 | Pending |
+| ASSET-03 | Phase 4 | Pending |
+| ASSET-04 | Phase 4 | Pending |
+| CAND-01 | Phase 5 | Pending |
+| CAND-02 | Phase 5 | Pending |
+| CAND-03 | Phase 5 | Pending |
+| CAND-04 | Phase 5 | Pending |
+| CAND-05 | Phase 5 | Pending |
+| A11Y-03 | Phase 5 | Pending |
+| SWAY-01 | Phase 6 | Pending |
+| SWAY-02 | Phase 6 | Pending |
+| SWAY-03 | Phase 6 | Pending |
+| FLIP-02 | Phase 6 | Pending |
+| FLIP-03 | Phase 6 | Pending |
+| FLIP-04 | Phase 6 | Pending |
+| FLIP-07 | Phase 6 | Pending |
+| A11Y-02 | Phase 6 | Pending |
+| A11Y-06 | Phase 7 | Pending |
+| PERF-01 | Phase 7 | Pending |
+| PERF-02 | Phase 7 | Pending |
+| PERF-03 | Phase 7 | Pending |
+| PERF-04 | Phase 7 | Pending |
+| PERF-05 | Phase 7 | Pending |
+| DEPLOY-03 | Phase 7 | Pending |
+
+### Coverage Summary by Phase
+
+| Phase | Requirements Count |
+|-------|-------------------|
+| Phase 1: Foundation + Deploy + Soft Gate | 12 |
+| Phase 2: Content Pipeline + Manifest Validation | 4 |
+| Phase 3: Static Room + Polaroid Layout + Reading View | 14 |
+| Phase 4: Asset Pipeline (Photos) | 4 |
+| Phase 5: Candle Reveal | 6 |
+| Phase 6: Idle Sway + Flip Animation + Pinch Zoom | 8 |
+| Phase 7: Hardening + A11y Audit + Ship | 7 |
+| **Total** | **55** |
 
 ---
 *Requirements defined: 2026-05-02*
-*Last updated: 2026-05-02 after initial definition*
+*Last updated: 2026-05-02 — traceability mapped to roadmap*
