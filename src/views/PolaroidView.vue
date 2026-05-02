@@ -13,7 +13,7 @@ const slug = computed(() => String(route.params.slug ?? ''))
 const poem = computed(() => getPoem(slug.value))
 
 const flipped = ref(false)
-const entered = ref(false) // toggles the enter-animation class after first paint
+const entered = ref(false)
 const baseUrl = import.meta.env.BASE_URL
 
 function close(): void {
@@ -24,10 +24,15 @@ function flip(): void {
   flipped.value = !flipped.value
 }
 
-function onKey(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
-    close()
+function onCardKey(e: KeyboardEvent): void {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    flip()
   }
+}
+
+function onKey(e: KeyboardEvent): void {
+  if (e.key === 'Escape') close()
 }
 
 function onBackdropClick(e: MouseEvent): void {
@@ -40,7 +45,6 @@ const stanzas = computed(() =>
 
 onMounted(() => {
   window.addEventListener('keydown', onKey)
-  // delay one tick so the enter animation triggers from the initial state
   void nextTick(() => {
     entered.value = true
   })
@@ -63,7 +67,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       <div class="pview__grain"></div>
     </div>
 
-    <!-- back button: only a big arrow, no label -->
     <button
       class="pview__back"
       type="button"
@@ -87,17 +90,22 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     </div>
 
     <div class="pview__stage" @click.stop>
-      <button
+      <!-- Card is a div with role=button so we can put DIVs inside (HTML
+           buttons can only contain phrasing content; nesting block-level 3D
+           transforms inside <button> breaks backface-visibility on iOS). -->
+      <div
         class="pview__card"
-        type="button"
         :class="{ 'pview__card--flipped': flipped }"
+        role="button"
+        tabindex="0"
         :aria-pressed="flipped"
         :aria-label="flipped ? 'mostra la foto' : 'gira la polaroid per leggere la poesia'"
         @click="flip"
+        @keydown="onCardKey"
       >
         <!-- FRONT — la foto -->
-        <span class="pview__face pview__face--front">
-          <span class="pview__photo">
+        <div class="pview__face pview__face--front">
+          <div class="pview__photo">
             <img
               v-if="poem"
               :src="`${baseUrl}photos/${poem.file}`"
@@ -105,20 +113,19 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
               decoding="async"
             />
             <span class="pview__shine" aria-hidden="true"></span>
-          </span>
-          <span class="pview__caption">
+          </div>
+          <div class="pview__caption">
             <span class="pview__caption-title">{{ poem ? poem.title : '' }}</span>
             <span class="pview__caption-date">{{ poem ? poem.date : '' }}</span>
-          </span>
-          <!-- page-peel hint on the right edge: a corner of the back peeking through -->
-          <span class="pview__peel" aria-hidden="true">
-            <span class="pview__peel-corner"></span>
-            <span class="pview__peel-hint">gira</span>
-          </span>
-        </span>
+          </div>
+          <div class="pview__peel" aria-hidden="true">
+            <div class="pview__peel-corner"></div>
+            <div class="pview__peel-hint">gira</div>
+          </div>
+        </div>
 
         <!-- BACK — la poesia -->
-        <span class="pview__face pview__face--back">
+        <div class="pview__face pview__face--back">
           <article class="pview__poem">
             <header class="pview__poem-header">
               <h1 class="pview__poem-title">{{ poem ? poem.title : '' }}</h1>
@@ -140,13 +147,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
                 </template>
               </p>
             </div>
-            <span class="pview__peel pview__peel--back" aria-hidden="true">
-              <span class="pview__peel-corner"></span>
-              <span class="pview__peel-hint">foto</span>
-            </span>
           </article>
-        </span>
-      </button>
+          <div class="pview__peel pview__peel--back" aria-hidden="true">
+            <div class="pview__peel-corner"></div>
+            <div class="pview__peel-hint">foto</div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 </template>
@@ -217,65 +224,72 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   mix-blend-mode: overlay;
 }
 
-/* ── back button: big arrow, no text ── */
+/* ── BACK ARROW ── */
 .pview__back {
   position: fixed;
   z-index: 10;
   top: clamp(var(--sp-sm), 2.5vh, var(--sp-lg));
   left: clamp(var(--sp-sm), 2.5vw, var(--sp-lg));
   appearance: none;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(244, 208, 138, 0.25);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(244, 208, 138, 0.28);
   border-radius: 50%;
-  color: rgba(233, 223, 201, 0.85);
+  color: rgba(233, 223, 201, 0.88);
   cursor: pointer;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.5rem;
+  height: 3.5rem;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
   transition:
-    background 220ms ease-out,
-    border-color 220ms ease-out,
-    color 220ms ease-out,
-    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 280ms ease-out;
+    background 240ms ease-out,
+    border-color 240ms ease-out,
+    color 240ms ease-out,
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 320ms ease-out;
   box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.6);
 }
 @media (min-width: 768px) {
   .pview__back {
-    width: 3.75rem;
-    height: 3.75rem;
+    width: 4rem;
+    height: 4rem;
   }
 }
 .pview__back svg {
   width: 60%;
   height: 60%;
   display: block;
-  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pview__back:hover,
 .pview__back:focus-visible {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   border-color: var(--c-focus);
   color: var(--c-paper-100);
-  transform: translateX(-2px);
+  transform: translateX(-3px) scale(1.05);
   box-shadow:
-    0 10px 24px -4px rgba(0, 0, 0, 0.7),
-    0 0 16px 2px rgba(244, 208, 138, 0.18);
+    0 10px 28px -4px rgba(0, 0, 0, 0.75),
+    0 0 24px 4px rgba(244, 208, 138, 0.32);
 }
 .pview__back:hover svg,
 .pview__back:focus-visible svg {
-  transform: translateX(-3px);
+  transform: translateX(-4px);
+  animation: pview-arrow-pulse 1.4s ease-in-out infinite;
+}
+@keyframes pview-arrow-pulse {
+  0%, 100% { transform: translateX(-4px); }
+  50% { transform: translateX(-7px); }
+}
+.pview__back:active {
+  transform: translateX(-2px) scale(0.96);
 }
 .pview__back:focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 4px;
 }
 
-/* zoom controls */
 .pview__controls {
   position: fixed;
   z-index: 10;
@@ -283,7 +297,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   right: clamp(var(--sp-sm), 2vw, var(--sp-md));
 }
 
-/* stage */
+/* ── STAGE ── */
 .pview__stage {
   position: relative;
   z-index: 1;
@@ -295,28 +309,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   perspective: 1800px;
 }
 
-/* ── flippable card (also click target — replaces "gira" button) ── */
+/* ── CARD (div+role=button so 3D faces work on iOS) ── */
 .pview__card {
-  appearance: none;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
   position: relative;
   width: var(--card-w);
   height: var(--card-h);
   max-height: calc(100dvh - 12rem);
+  cursor: pointer;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
   transform: rotateY(0deg);
   transition:
     transform var(--flip-duration) var(--flip-ease),
     width 600ms var(--flip-ease),
     height 600ms var(--flip-ease),
-    max-height 600ms var(--flip-ease);
+    max-height 600ms var(--flip-ease),
+    filter 400ms ease-out;
   filter: drop-shadow(0 24px 48px rgba(0, 0, 0, 0.7));
+  outline: none;
 }
 
-/* enter animation: polaroid flies in from below, slightly rotated, growing */
+/* Enter animation */
 .pview[data-entered='false'] .pview__card {
   opacity: 0;
   transform: rotateY(0deg) scale(0.4) translateY(28vh) rotate(-8deg);
@@ -340,9 +353,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     max-height 600ms var(--flip-ease);
 }
 
-.pview__card:focus-visible {
-  outline: none;
+@media (hover: hover) and (pointer: fine) {
+  .pview__card:hover:not(.pview__card--flipped) {
+    filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.85))
+      drop-shadow(0 0 32px rgba(244, 208, 138, 0.18));
+  }
+  .pview__card:hover:not(.pview__card--flipped) .pview__photo img {
+    filter: brightness(1.05) contrast(1.1);
+    transform: scale(1.04);
+  }
 }
+
 .pview__card:focus-visible .pview__face {
   box-shadow:
     0 1px 0 rgba(255, 245, 220, 0.35),
@@ -351,24 +372,30 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     0 0 0 3px var(--c-focus);
 }
 
+/* ── FACES — DIVs (not spans), no overflow:hidden, with hard 3D guards ── */
 .pview__face {
   position: absolute;
   inset: 0;
+  display: block;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  /* force GPU layer + 3D context — required on iOS Safari to make
+     backface-visibility actually hide the back of front when card flips */
+  transform: translateZ(0.01px);
+  -webkit-transform: translateZ(0.01px);
+  will-change: transform;
   border-radius: 1px;
   box-shadow:
     0 1px 0 rgba(255, 245, 220, 0.3),
     0 24px 50px -10px rgba(0, 0, 0, 0.85),
     0 6px 14px -2px rgba(0, 0, 0, 0.55);
-  overflow: hidden;
+  transition: box-shadow 320ms ease-out;
 }
 
 /* FRONT */
 .pview__face--front {
   background: linear-gradient(to bottom, #f4ecd6 0%, var(--c-paper-100) 35%, #ddd0b0 100%);
   padding: 6% 6% 0 6%;
-  display: block;
 }
 .pview__face--front::before {
   content: '';
@@ -379,6 +406,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   opacity: 0.06;
   mix-blend-mode: multiply;
   pointer-events: none;
+  border-radius: inherit;
 }
 
 .pview__photo {
@@ -398,13 +426,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   object-fit: cover;
   display: block;
   filter: brightness(0.95) contrast(1.05);
-  transition: filter 400ms ease-out, transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .pview__card:hover .pview__photo img {
-    filter: brightness(1) contrast(1.08);
-    transform: scale(1.025);
-  }
+  transition:
+    filter 400ms ease-out,
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .pview__shine {
   position: absolute;
@@ -443,13 +467,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   opacity: 0.65;
 }
 
-/* ── PAGE-PEEL HINT (replaces "gira" button) ── */
+/* ── PEEL HINT ── */
 .pview__peel {
   position: absolute;
   top: 0;
   right: 0;
-  width: 4rem;
-  height: 4rem;
+  width: 4.5rem;
+  height: 4.5rem;
   pointer-events: none;
   z-index: 2;
 }
@@ -458,53 +482,51 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   inset: 0;
   background: linear-gradient(
     225deg,
-    rgba(0, 0, 0, 0.45) 0%,
-    rgba(58, 44, 28, 0.55) 35%,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(58, 44, 28, 0.6) 35%,
     transparent 60%
   );
-  /* triangular fold revealing dark "back of paper" */
   clip-path: polygon(100% 0%, 100% 100%, 0% 0%);
-  opacity: 0;
+  opacity: 0.35;
   transform: scale(0.7) rotate(0deg);
   transform-origin: 100% 0%;
   transition:
-    opacity 280ms ease-out,
-    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
-  filter: drop-shadow(-2px 2px 3px rgba(0, 0, 0, 0.45));
+    opacity 320ms ease-out,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(-2px 2px 4px rgba(0, 0, 0, 0.5));
 }
 .pview__peel-hint {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.55rem;
+  right: 0.55rem;
   font:
-    400 1.1rem / 1 'Italianno',
+    400 1.4rem / 1 'Italianno',
     cursive;
   color: var(--c-paper-100);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   opacity: 0;
   transform: translate(0.4rem, -0.4rem) rotate(8deg);
   transition:
-    opacity 280ms ease-out,
-    transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 320ms ease-out,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 @media (hover: hover) and (pointer: fine) {
   .pview__card:hover .pview__peel-corner {
     opacity: 1;
-    transform: scale(1) rotate(0deg);
+    transform: scale(1.1) rotate(-2deg);
   }
   .pview__card:hover .pview__peel-hint {
-    opacity: 0.95;
+    opacity: 1;
     transform: translate(0, 0) rotate(0deg);
   }
 }
-/* always show a faint hint on touch (no hover) */
 @media (pointer: coarse) {
   .pview__peel-corner {
-    opacity: 0.55;
+    opacity: 0.7;
     transform: scale(1) rotate(0deg);
   }
   .pview__peel-hint {
-    opacity: 0.7;
+    opacity: 0.85;
     transform: translate(0, 0) rotate(0deg);
   }
 }
@@ -512,7 +534,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 /* BACK */
 .pview__face--back {
   background: linear-gradient(to bottom, #f0e6d0 0%, var(--c-paper-100) 35%, #e3d6b8 100%);
-  transform: rotateY(180deg);
+  transform: rotateY(180deg) translateZ(0.01px);
+  -webkit-transform: rotateY(180deg) translateZ(0.01px);
   padding: clamp(var(--sp-md), 3vw, var(--sp-2xl));
   display: flex;
   flex-direction: column;
@@ -526,9 +549,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   opacity: 0.08;
   mix-blend-mode: multiply;
   pointer-events: none;
+  border-radius: inherit;
 }
 .pview__peel--back {
-  /* mirrored on the back so the user can tap the corner to flip back */
   top: 0;
   left: 0;
   right: auto;
@@ -536,23 +559,18 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 .pview__peel--back .pview__peel-corner {
   background: linear-gradient(
     -45deg,
-    rgba(0, 0, 0, 0.45) 0%,
-    rgba(58, 44, 28, 0.55) 35%,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(58, 44, 28, 0.6) 35%,
     transparent 60%
   );
   clip-path: polygon(0% 0%, 0% 100%, 100% 0%);
   transform-origin: 0% 0%;
-  filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
 }
 .pview__peel--back .pview__peel-hint {
-  left: 0.5rem;
+  left: 0.55rem;
   right: auto;
   transform: translate(-0.4rem, -0.4rem) rotate(-8deg);
-}
-.pview__card--flipped:hover .pview__peel-corner,
-.pview__card--flipped .pview__peel--back .pview__peel-corner {
-  opacity: 1;
-  transform: scale(1);
 }
 
 .pview__poem {
@@ -605,15 +623,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 }
 .pview__poem-stanza {
   margin: 0 0 var(--sp-md);
-  /* stagger fade-in when the back face becomes visible */
   opacity: 0;
-  animation: pview-stanza-in 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: calc(700ms + var(--stanza-i, 0) * 120ms);
-}
-.pview__card:not(.pview__card--flipped) .pview__poem-stanza {
-  /* don't animate while back is hidden */
-  opacity: 0;
-  animation: none;
 }
 .pview__card--flipped .pview__poem-stanza {
   animation: pview-stanza-in 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -637,32 +647,22 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 @media (prefers-reduced-motion: reduce) {
   .pview__card {
     transition: none !important;
-    transform: none !important;
   }
   .pview[data-entered='false'] .pview__card,
   .pview[data-entered='true'] .pview__card {
     opacity: 1;
-    transform: none !important;
+    transform: rotateY(0deg) !important;
   }
-  .pview__face--back {
-    transform: none;
-    display: none;
+  .pview[data-entered='true'] .pview__card.pview__card--flipped {
+    transform: rotateY(180deg) !important;
   }
-  .pview__card--flipped .pview__face--front {
-    display: none;
-  }
-  .pview__card--flipped .pview__face--back {
-    display: flex;
-  }
-  .pview__poem-stanza,
-  .pview__card--flipped .pview__poem-stanza {
+  .pview__poem-stanza {
     opacity: 1 !important;
     animation: none !important;
     transform: none !important;
   }
-  .pview__peel-corner,
-  .pview__peel-hint {
-    transition: none !important;
+  .pview__back svg {
+    animation: none !important;
   }
 }
 </style>

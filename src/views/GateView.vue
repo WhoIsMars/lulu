@@ -70,7 +70,10 @@ function onInput(): void {
     <!-- candela sul desktop, posizionata in alto-sinistra -->
     <svg
       class="gate__candle"
-      :class="{ 'gate__candle--thinking': submitting && !reducedMotion }"
+      :class="{
+        'gate__candle--thinking': submitting && !reducedMotion,
+        'gate__candle--opening': state === 'opened' && !reducedMotion,
+      }"
       viewBox="0 0 96 168"
       aria-hidden="true"
       focusable="false"
@@ -154,6 +157,7 @@ function onInput(): void {
     <div class="gate__decor" aria-hidden="true">
       <!-- second, older letter peeking from behind -->
       <div class="gate__back-letter"></div>
+
       <!-- ink stain -->
       <svg
         class="gate__ink-stain"
@@ -168,6 +172,95 @@ function onInput(): void {
         />
         <ellipse cx="62" cy="50" rx="3" ry="2" fill="var(--c-soot-900)" opacity="0.6" />
         <ellipse cx="68" cy="44" rx="1.6" ry="1.2" fill="var(--c-soot-900)" opacity="0.5" />
+      </svg>
+
+      <!-- inkpot — heavy glass jar with metal cap -->
+      <svg
+        class="gate__inkpot"
+        viewBox="0 0 60 80"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id="ink-glass" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#1a1410" />
+            <stop offset="40%" stop-color="#0e0b08" />
+            <stop offset="100%" stop-color="#000000" />
+          </linearGradient>
+          <linearGradient id="ink-cap" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#5a4530" />
+            <stop offset="50%" stop-color="#3a2c1c" />
+            <stop offset="100%" stop-color="#1a140c" />
+          </linearGradient>
+        </defs>
+        <!-- glass body -->
+        <path
+          d="M 14 30 Q 14 26, 18 26 L 42 26 Q 46 26, 46 30 L 46 70 Q 46 74, 42 74 L 18 74 Q 14 74, 14 70 Z"
+          fill="url(#ink-glass)"
+        />
+        <!-- glass highlight on left edge -->
+        <path
+          d="M 17 32 L 17 68"
+          stroke="rgba(120,100,80,0.28)"
+          stroke-width="0.8"
+          stroke-linecap="round"
+        />
+        <!-- ink level inside (slight gloss) -->
+        <ellipse cx="30" cy="42" rx="13" ry="2" fill="rgba(40,30,20,0.7)" />
+        <!-- cap -->
+        <rect x="12" y="20" width="36" height="10" rx="1.5" fill="url(#ink-cap)" />
+        <rect x="14" y="18" width="32" height="3" rx="0.5" fill="url(#ink-cap)" />
+        <!-- ground shadow -->
+        <ellipse cx="30" cy="76" rx="22" ry="2.5" fill="#000" opacity="0.55" />
+      </svg>
+
+      <!-- quill pen — feather laying diagonally across the desk -->
+      <svg
+        class="gate__quill"
+        viewBox="0 0 200 60"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id="feather-grad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#3a2c1c" />
+            <stop offset="50%" stop-color="#5a4530" />
+            <stop offset="100%" stop-color="#7a6243" />
+          </linearGradient>
+        </defs>
+        <!-- nib (sharp tip on the left, dipped in ink) -->
+        <path
+          d="M 4 30 L 14 28 L 14 32 Z"
+          fill="#0e0b08"
+        />
+        <!-- shaft -->
+        <path
+          d="M 14 28 L 130 18"
+          stroke="#3a2c1c"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+        <!-- feather body — overlapping curves -->
+        <path
+          d="M 60 24 Q 80 6, 130 12 Q 150 8, 180 18 Q 170 28, 150 30 Q 110 34, 80 32 Q 70 32, 60 24 Z"
+          fill="url(#feather-grad)"
+          opacity="0.9"
+        />
+        <!-- feather barbs (dotted lines suggesting plumage) -->
+        <g stroke="rgba(58,44,28,0.55)" stroke-width="0.5" fill="none">
+          <path d="M 80 22 L 75 16" />
+          <path d="M 95 22 L 90 14" />
+          <path d="M 110 20 L 105 12" />
+          <path d="M 125 18 L 120 10" />
+          <path d="M 140 18 L 135 9" />
+          <path d="M 155 20 L 150 11" />
+          <path d="M 80 28 L 76 36" />
+          <path d="M 95 28 L 91 38" />
+          <path d="M 110 28 L 106 38" />
+          <path d="M 125 28 L 121 38" />
+        </g>
+        <!-- shadow under quill -->
+        <ellipse cx="100" cy="50" rx="80" ry="3" fill="#000" opacity="0.4" />
       </svg>
     </div>
 
@@ -184,6 +277,41 @@ function onInput(): void {
         @click="openLetter"
       >
         <div class="gate__env-shadow"></div>
+        <!-- ribbon/spago annodato attorno alla busta — decorative -->
+        <svg
+          class="gate__env-ribbon"
+          viewBox="0 0 200 120"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <defs>
+            <linearGradient id="ribbon-grad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="rgba(120,90,55,0.92)" />
+              <stop offset="50%" stop-color="rgba(78,58,38,0.95)" />
+              <stop offset="100%" stop-color="rgba(50,38,25,0.95)" />
+            </linearGradient>
+          </defs>
+          <!-- vertical strap — runs top to bottom through the centre -->
+          <rect x="98" y="0" width="4" height="120" fill="url(#ribbon-grad)" />
+          <!-- horizontal strap behind seal -->
+          <rect x="0" y="58" width="200" height="4" fill="url(#ribbon-grad)" />
+          <!-- knot — two small tail wisps coming out from under the seal -->
+          <path
+            d="M 100 60 Q 96 66, 92 68 Q 90 72, 94 74 Q 98 72, 102 70"
+            stroke="rgba(60,42,25,0.85)"
+            stroke-width="2.2"
+            fill="none"
+            stroke-linecap="round"
+          />
+          <path
+            d="M 100 60 Q 104 66, 108 68 Q 110 72, 106 74 Q 102 72, 98 70"
+            stroke="rgba(60,42,25,0.85)"
+            stroke-width="2.2"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
         <!-- envelope back (paper rectangle) -->
         <div class="gate__env-back">
           <!-- diagonal flap fold lines at the back, faint -->
@@ -211,51 +339,58 @@ function onInput(): void {
         <!-- triangular flap, top -->
         <div class="gate__env-flap"></div>
 
-        <!-- wax seal -->
+        <!-- wax seal — split into two halves that crack open during animation,
+             with a calligraphic L monogram (rendered via Italianno foreignObject) -->
         <div class="gate__env-seal">
-          <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-            <defs>
-              <radialGradient id="wax-disc" cx="40%" cy="35%" r="65%">
-                <stop offset="0%" stop-color="#c97250" />
-                <stop offset="55%" stop-color="#a85a3a" />
-                <stop offset="100%" stop-color="#5e2d18" />
-              </radialGradient>
-              <radialGradient id="wax-shine" cx="35%" cy="30%" r="22%">
-                <stop offset="0%" stop-color="rgba(255,220,180,0.55)" />
-                <stop offset="100%" stop-color="rgba(255,220,180,0)" />
-              </radialGradient>
-            </defs>
-            <!-- irregular blob outer rim -->
-            <path
-              d="M 32 4
-                 Q 44 3, 50 12
-                 Q 60 16, 59 28
-                 Q 62 38, 54 46
-                 Q 50 58, 38 58
-                 Q 28 62, 18 56
-                 Q 6 52, 8 40
-                 Q 2 30, 10 22
-                 Q 14 8, 26 8
-                 Q 30 4, 32 4 Z"
-              fill="url(#wax-disc)"
-            />
-            <!-- shine highlight -->
-            <ellipse cx="22" cy="20" rx="10" ry="6" fill="url(#wax-shine)" />
-            <!-- embossed flourish — abstract cursive mark -->
-            <path
-              d="M 22 36
-                 Q 28 24, 36 28
-                 Q 44 30, 40 40
-                 Q 36 46, 28 42
-                 M 36 28 Q 40 22, 44 26"
-              stroke="rgba(60,18,8,0.65)"
-              stroke-width="1.4"
-              fill="none"
-              stroke-linecap="round"
-            />
-            <!-- small ridges around perimeter -->
-            <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(60,18,8,0.18)" stroke-width="0.8" stroke-dasharray="1.6 2.2" />
-          </svg>
+          <div class="gate__seal-half gate__seal-half--left">
+            <svg viewBox="0 0 32 64" aria-hidden="true" focusable="false">
+              <defs>
+                <radialGradient id="wax-disc-l" cx="80%" cy="35%" r="80%">
+                  <stop offset="0%" stop-color="#c97250" />
+                  <stop offset="55%" stop-color="#a85a3a" />
+                  <stop offset="100%" stop-color="#5e2d18" />
+                </radialGradient>
+                <radialGradient id="wax-shine-l" cx="70%" cy="30%" r="40%">
+                  <stop offset="0%" stop-color="rgba(255,220,180,0.55)" />
+                  <stop offset="100%" stop-color="rgba(255,220,180,0)" />
+                </radialGradient>
+              </defs>
+              <path
+                d="M 32 4 L 32 60 Q 28 62, 18 56 Q 6 52, 8 40 Q 2 30, 10 22 Q 14 8, 26 8 Q 30 4, 32 4 Z"
+                fill="url(#wax-disc-l)"
+              />
+              <ellipse cx="22" cy="20" rx="8" ry="6" fill="url(#wax-shine-l)" />
+              <path
+                d="M 32 32 L 28 32"
+                stroke="rgba(255,220,180,0.18)"
+                stroke-width="0.6"
+                stroke-dasharray="0.8 1.2"
+              />
+            </svg>
+          </div>
+          <div class="gate__seal-half gate__seal-half--right">
+            <svg viewBox="0 0 32 64" aria-hidden="true" focusable="false">
+              <defs>
+                <radialGradient id="wax-disc-r" cx="20%" cy="35%" r="80%">
+                  <stop offset="0%" stop-color="#c97250" />
+                  <stop offset="55%" stop-color="#a85a3a" />
+                  <stop offset="100%" stop-color="#5e2d18" />
+                </radialGradient>
+              </defs>
+              <path
+                d="M 0 4 Q 4 3, 18 12 Q 28 16, 27 28 Q 30 38, 22 46 Q 18 58, 6 58 L 0 60 Z"
+                fill="url(#wax-disc-r)"
+              />
+              <path
+                d="M 0 32 L 4 32"
+                stroke="rgba(255,220,180,0.18)"
+                stroke-width="0.6"
+                stroke-dasharray="0.8 1.2"
+              />
+            </svg>
+          </div>
+          <!-- the L monogram in calligraphic font, sitting above the seal halves -->
+          <span class="gate__seal-mono" aria-hidden="true">L</span>
         </div>
       </button>
 
@@ -711,10 +846,10 @@ function onInput(): void {
   clip-path: inherit;
 }
 
-/* wax seal on top of flap point */
+/* wax seal — two halves that crack apart on opening */
 .gate__env-seal {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   width: clamp(48px, 9vw, 72px);
   height: clamp(48px, 9vw, 72px);
   top: 50%;
@@ -723,10 +858,115 @@ function onInput(): void {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55))
     drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
-.gate__env-seal svg {
+.gate__seal-half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  transition:
+    transform 480ms cubic-bezier(0.65, 0, 0.35, 1) 80ms,
+    opacity 360ms ease-out 320ms;
+}
+.gate__seal-half--left {
+  left: 0;
+  transform-origin: 100% 50%;
+}
+.gate__seal-half--right {
+  right: 0;
+  transform-origin: 0% 50%;
+}
+.gate__seal-half svg {
   width: 100%;
   height: 100%;
   display: block;
+}
+/* Monogram L sits on top of the seal in calligraphic Italianno font */
+.gate__seal-mono {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font:
+    400 calc(clamp(48px, 9vw, 72px) * 0.85) / 1 'Italianno',
+    cursive;
+  color: rgba(255, 230, 195, 0.92);
+  text-shadow:
+    0 1px 1px rgba(60, 18, 8, 0.85),
+    0 0 6px rgba(255, 220, 180, 0.25);
+  pointer-events: none;
+  transform: translateY(-2%);
+  transition: opacity 280ms ease-out 240ms;
+}
+
+/* Cracked-open state: halves rotate + slide outward, monogram fades */
+.gate[data-state='opened'] .gate__seal-half--left {
+  transform: translateX(-22%) rotate(-14deg);
+  opacity: 0;
+}
+.gate[data-state='opened'] .gate__seal-half--right {
+  transform: translateX(22%) rotate(14deg);
+  opacity: 0;
+}
+.gate[data-state='opened'] .gate__seal-mono {
+  opacity: 0;
+}
+
+/* ───────── ribbon overlay ───────── */
+.gate__env-ribbon {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+  transition: opacity 360ms ease-out;
+}
+.gate[data-state='opened'] .gate__env-ribbon {
+  opacity: 0;
+}
+
+/* ───────── inkpot + quill on the desk ───────── */
+.gate__inkpot {
+  position: absolute;
+  width: clamp(36px, 5.5vw, 60px);
+  height: auto;
+  bottom: clamp(6vh, 10vh, 14vh);
+  left: clamp(6vw, 12vw, 16vw);
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
+}
+.gate__quill {
+  position: absolute;
+  width: clamp(140px, 20vw, 220px);
+  height: auto;
+  bottom: clamp(8vh, 12vh, 16vh);
+  left: clamp(10vw, 17vw, 22vw);
+  transform: rotate(-8deg);
+  transform-origin: 0% 50%;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.55));
+  opacity: 0.92;
+}
+@media (max-width: 540px) {
+  /* on small phones, inkpot/quill clutter — hide them */
+  .gate__inkpot,
+  .gate__quill {
+    display: none;
+  }
+}
+
+/* ───────── candle: flicker during opening ───────── */
+.gate__candle--opening .gate__candle-tip {
+  animation: gate-tip-flicker 700ms cubic-bezier(0.4, 0, 0.6, 1) 1;
+}
+@keyframes gate-tip-flicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  10% { opacity: 0.55; transform: scale(0.7) translateX(-0.3px); }
+  25% { opacity: 0.92; transform: scale(0.95) translateX(0.4px); }
+  40% { opacity: 0.65; transform: scale(0.78); }
+  55% { opacity: 0.95; transform: scale(1.02) translateX(-0.3px); }
+  70% { opacity: 0.7; transform: scale(0.85); }
+  85% { opacity: 0.98; transform: scale(0.97); }
 }
 
 /* ───────── LETTER (opened state) ───────── */
@@ -888,8 +1128,12 @@ function onInput(): void {
 }
 
 .gate__input::placeholder {
-  color: rgba(58, 44, 28, 0.42);
-  font-style: italic;
+  color: rgba(58, 44, 28, 0.55);
+  font:
+    400 1.6em / 1 'Italianno',
+    'Cormorant Garamond',
+    cursive;
+  letter-spacing: 0.02em;
 }
 
 .gate__underline {

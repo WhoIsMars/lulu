@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useReducedMotion } from '@/composables/useReducedMotion'
 import { usePointerLight } from '@/composables/usePointerLight'
@@ -13,38 +12,16 @@ usePointerLight()
 const baseUrl = import.meta.env.BASE_URL
 
 /**
- * Layout: 3 ropes × 5 polaroids each, derived by chronological index from the
- * manifest. The manifest's per-entry `rope` field is ignored here in favor of
- * an even visual distribution (5+5+5 reads better than 4+4+4+3).
+ * Layout: 3 ropes × 5 polaroids each, chronological. Single-screen view —
+ * all 15 polaroids visible at once on every viewport (no carousel, no
+ * scroll). Polaroid size scales fluidly via clamp() so it fits a 375×667
+ * iPhone as well as a 1440 desktop.
  */
 const ROPE_COUNT = 3
 const POLAROIDS_PER_ROPE = 5
 const ropes: Poem[][] = Array.from({ length: ROPE_COUNT }, (_, i) =>
   poems.slice(i * POLAROIDS_PER_ROPE, (i + 1) * POLAROIDS_PER_ROPE),
 )
-
-/* ── narrow-viewport carousel state ── */
-const NARROW_BREAKPOINT = 768
-const isNarrow = ref(false)
-const activeRope = ref(0)
-
-function checkNarrow(): void {
-  isNarrow.value = window.innerWidth < NARROW_BREAKPOINT
-}
-
-function setActiveRope(i: number): void {
-  activeRope.value = Math.max(0, Math.min(ROPE_COUNT - 1, i))
-}
-
-const totalRopes = computed(() => ropes.length)
-
-onMounted(() => {
-  checkNarrow()
-  window.addEventListener('resize', checkNarrow, { passive: true })
-})
-onUnmounted(() => {
-  window.removeEventListener('resize', checkNarrow)
-})
 
 function openPolaroid(p: Poem): void {
   void router.push({ name: 'polaroid', params: { slug: p.slug } })
@@ -55,10 +32,9 @@ function openPolaroid(p: Poem): void {
   <main
     class="home"
     :data-rm="reducedMotion ? 'true' : 'false'"
-    :data-narrow="isNarrow ? 'true' : 'false'"
     aria-label="stanza"
   >
-    <!-- atmospheric layers -->
+    <!-- atmosphere -->
     <div class="home__atmosphere" aria-hidden="true">
       <div class="home__sky"></div>
       <div class="home__beams"></div>
@@ -67,7 +43,7 @@ function openPolaroid(p: Poem): void {
       <div class="home__grain"></div>
     </div>
 
-    <!-- floating dust motes -->
+    <!-- dust motes -->
     <div class="home__dust" aria-hidden="true">
       <span
         v-for="i in 12"
@@ -77,7 +53,7 @@ function openPolaroid(p: Poem): void {
       ></span>
     </div>
 
-    <!-- candle echo on the desk -->
+    <!-- candle echo on the desk corner -->
     <svg
       class="home__candle-echo"
       viewBox="0 0 32 56"
@@ -95,22 +71,17 @@ function openPolaroid(p: Poem): void {
       <ellipse cx="16" cy="49" rx="9" ry="2" fill="#1a140c" />
     </svg>
 
-    <!-- top-right: zoom controls -->
+    <!-- top-right zoom -->
     <div class="home__controls">
       <ZoomControls />
     </div>
 
-    <!-- the room -->
-    <div
-      class="home__room"
-      :style="{ '--active-rope': activeRope }"
-    >
+    <!-- room -->
+    <div class="home__room">
       <div
         v-for="(rope, ropeIdx) in ropes"
         :key="ropeIdx"
         class="home__rope"
-        :data-active="ropeIdx === activeRope ? 'true' : 'false'"
-        :inert="isNarrow && ropeIdx !== activeRope ? true : undefined"
       >
         <div class="home__rope-line" aria-hidden="true"></div>
         <ul class="home__pegs">
@@ -139,17 +110,14 @@ function openPolaroid(p: Poem): void {
                       <stop offset="100%" stop-color="#1a140c" />
                     </linearGradient>
                   </defs>
-                  <!-- top jaw -->
                   <path
                     d="M 6 2 L 26 2 Q 28 2, 28 4 L 28 16 Q 28 18, 26 18 L 22 18 L 22 22 L 10 22 L 10 18 L 6 18 Q 4 18, 4 16 L 4 4 Q 4 2, 6 2 Z"
                     fill="url(#peg-grad)"
                   />
-                  <!-- bottom jaw -->
                   <path
                     d="M 9 22 L 23 22 Q 25 22, 25 24 L 25 34 Q 25 36, 23 36 L 9 36 Q 7 36, 7 34 L 7 24 Q 7 22, 9 22 Z"
                     fill="url(#peg-grad)"
                   />
-                  <!-- center spring -->
                   <line x1="16" y1="6" x2="16" y2="22" stroke="rgba(0,0,0,0.5)" stroke-width="1" />
                   <circle cx="16" cy="14" r="1.3" fill="#1a140c" />
                 </svg>
@@ -167,10 +135,9 @@ function openPolaroid(p: Poem): void {
                 </span>
                 <span class="home__caption">
                   <span class="home__caption-title">{{ p.title }}</span>
-                  <span class="home__caption-date">{{ p.date }}</span>
                 </span>
-                <!-- ground shadow on the floor -->
                 <span class="home__card-shadow" aria-hidden="true"></span>
+                <span class="home__card-glow" aria-hidden="true"></span>
               </span>
             </button>
           </li>
@@ -178,28 +145,10 @@ function openPolaroid(p: Poem): void {
       </div>
     </div>
 
-    <!-- carousel indicator (only on narrow viewports) -->
-    <nav
-      v-if="isNarrow"
-      class="home__indicator"
-      aria-label="navigazione fili"
-    >
-      <button
-        v-for="i in totalRopes"
-        :key="i"
-        class="home__indicator-dot"
-        type="button"
-        :data-active="i - 1 === activeRope ? 'true' : 'false'"
-        :aria-label="`filo ${i} di ${totalRopes}`"
-        :aria-current="i - 1 === activeRope ? 'true' : undefined"
-        @click="setActiveRope(i - 1)"
-      ></button>
-    </nav>
-
     <!-- candle-cursor mask -->
     <div class="home__darkness" aria-hidden="true"></div>
 
-    <!-- the cursor IS a tiny candle (with flame) following the pointer -->
+    <!-- candle SVG that follows the pointer -->
     <svg
       class="home__cursor-candle"
       viewBox="0 0 28 56"
@@ -244,22 +193,21 @@ function openPolaroid(p: Poem): void {
 
 <style scoped>
 .home {
-  --light-radius: clamp(10rem, 26vw, 18rem);
-  --light-soft: clamp(14rem, 34vw, 24rem);
+  --light-radius: clamp(8rem, 22vw, 16rem);
+  --light-soft: clamp(12rem, 30vw, 22rem);
   --darkness-floor: 0.93;
   --darkness-floor-touch: 0.96;
-  /* Polaroid sized in rem so user zoom (--user-font-scale on root) magnifies them.
-     3 ropes × 5 polaroids = bigger card than the previous 4×4 layout. */
-  --polaroid-w: clamp(7rem, 14vw, 11rem);
+  /* polaroid scales fluidly so all 15 fit in any viewport without scroll.
+     Min 4.5rem (72px @ 1× zoom) on tiny phones, max 11rem on desktop. */
+  --polaroid-w: clamp(4.5rem, 11vw, 11rem);
   --polaroid-h: calc(var(--polaroid-w) * 1.24);
   --polaroid-photo-h: calc(var(--polaroid-w) * 0.94);
-  --rope-gap-h: clamp(2rem, 5vw, 4rem);
-  --rope-gap-v: clamp(1.5rem, 6vh, 3.5rem);
+  --rope-gap-h: clamp(0.5rem, 2.5vw, 2.5rem);
+  --rope-gap-v: clamp(0.5rem, 4vh, 2rem);
   --grain-opacity: 0.05;
   --moonbeam-opacity: 0.075;
   --dust-opacity: 0.55;
   --candle-warmth: 250, 220, 170;
-  --rope-fade: 350ms;
 }
 
 .home {
@@ -271,8 +219,6 @@ function openPolaroid(p: Poem): void {
   background: var(--c-soot-900);
   cursor: none;
 }
-/* Hide native cursor on EVERY descendant — child elements with their own
-   cursor rule (e.g., button cursor: pointer) would otherwise reveal it. */
 .home,
 .home * {
   cursor: none !important;
@@ -284,7 +230,7 @@ function openPolaroid(p: Poem): void {
   }
 }
 
-/* ── atmosphere ── */
+/* ── atmosphere layers ── */
 .home__atmosphere {
   position: absolute;
   inset: 0;
@@ -316,7 +262,6 @@ function openPolaroid(p: Poem): void {
       var(--c-soot-900) 100%
     );
 }
-
 .home__sky::before {
   content: '';
   position: absolute;
@@ -346,7 +291,6 @@ function openPolaroid(p: Poem): void {
     0 0 30px rgba(242, 217, 164, 0.07);
   opacity: 0.9;
 }
-
 .home__sky::after {
   content: '';
   position: absolute;
@@ -363,7 +307,7 @@ function openPolaroid(p: Poem): void {
 .home__beams {
   position: absolute;
   inset: 0 0 auto 0;
-  height: 26%;
+  height: 22%;
   background:
     linear-gradient(to top, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.5) 100%),
     linear-gradient(
@@ -395,7 +339,7 @@ function openPolaroid(p: Poem): void {
 .home__floor {
   position: absolute;
   inset: auto 0 0 0;
-  height: 16%;
+  height: 14%;
   background:
     linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 80%),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0, rgba(0, 0, 0, 0.15) 2%, transparent 5%),
@@ -438,7 +382,7 @@ function openPolaroid(p: Poem): void {
   pointer-events: none;
 }
 
-/* ── dust ── */
+/* dust */
 .home__dust {
   position: absolute;
   inset: 0;
@@ -477,20 +421,18 @@ function openPolaroid(p: Poem): void {
   }
 }
 
-/* ── candle echo ── */
 .home__candle-echo {
   position: absolute;
   z-index: 5;
-  width: clamp(24px, 3vw + 12px, 40px);
+  width: clamp(20px, 2.8vw + 10px, 36px);
   height: auto;
-  bottom: clamp(var(--sp-md), 4vh, var(--sp-xl));
-  right: clamp(var(--sp-md), 4vw, var(--sp-2xl));
+  bottom: clamp(0.5rem, 2.5vh, 1rem);
+  right: clamp(0.5rem, 3vw, 1.5rem);
   filter: drop-shadow(var(--shadow-candle-cold));
   opacity: 0.85;
   pointer-events: none;
 }
 
-/* ── top-right zoom controls ── */
 .home__controls {
   position: absolute;
   z-index: 9;
@@ -498,7 +440,7 @@ function openPolaroid(p: Poem): void {
   right: clamp(var(--sp-sm), 2vw, var(--sp-md));
 }
 
-/* ── room layout ── */
+/* ── room: 3 ropes flexbox column, all visible ── */
 .home__room {
   position: relative;
   z-index: 6;
@@ -508,8 +450,8 @@ function openPolaroid(p: Poem): void {
   flex-direction: column;
   justify-content: space-evenly;
   align-items: center;
-  padding: clamp(3rem, 8vh, 5.5rem) clamp(var(--sp-md), 3vw, var(--sp-2xl))
-    clamp(2.5rem, 6vh, 4.5rem);
+  padding: clamp(2.5rem, 7vh, 4.5rem) clamp(0.5rem, 2vw, 2rem)
+    clamp(1.5rem, 5vh, 3rem);
   gap: var(--rope-gap-v);
   pointer-events: auto;
 }
@@ -524,8 +466,8 @@ function openPolaroid(p: Poem): void {
 .home__rope-line {
   position: absolute;
   top: 0;
-  left: 5%;
-  right: 5%;
+  left: 4%;
+  right: 4%;
   height: 2px;
   background: linear-gradient(
     to right,
@@ -554,24 +496,22 @@ function openPolaroid(p: Poem): void {
   display: block;
 }
 
+/* ── POLAROID — strong hover effects ── */
 .home__polaroid {
   appearance: none;
   background: transparent;
   border: 0;
   padding: 0;
-  cursor: pointer;
   position: relative;
   display: block;
   transform: rotate(var(--rot, 0deg));
   transform-origin: 50% 8%;
   transition:
-    transform 320ms cubic-bezier(0.16, 1, 0.3, 1) var(--lift-delay, 0ms),
-    filter 320ms ease-out var(--lift-delay, 0ms);
-  /* tilt the card slightly forward toward the viewer at rest */
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1) var(--lift-delay, 0ms),
+    filter 360ms ease-out var(--lift-delay, 0ms);
   perspective: 1000px;
 }
 
-/* a slow gentle sway on idle (deterministic, paused under reduced-motion) */
 @keyframes home-sway {
   0%,
   100% {
@@ -597,30 +537,47 @@ function openPolaroid(p: Poem): void {
     0 0 0 3px var(--c-focus);
 }
 
+/* HOVER: lift + tilt + glow + accelerate sway */
 @media (hover: hover) and (pointer: fine) {
   .home__polaroid:hover {
-    animation-play-state: paused;
-    transform: rotate(calc(var(--rot, 0deg) * 0.3)) translateY(-8px) scale(1.03);
+    animation-duration: 1.2s;
+    transform: rotate(calc(var(--rot, 0deg) * 0.25)) translateY(-12px) scale(1.06)
+      rotateX(-4deg);
+    z-index: 5;
   }
   .home__polaroid:hover .home__card {
     box-shadow:
-      0 1px 0 rgba(255, 245, 220, 0.55),
-      0 28px 56px -10px rgba(0, 0, 0, 0.95),
-      0 8px 18px -2px rgba(0, 0, 0, 0.7),
-      0 0 24px 2px rgba(244, 208, 138, 0.18);
+      0 2px 0 rgba(255, 245, 220, 0.6),
+      0 36px 64px -10px rgba(0, 0, 0, 0.95),
+      0 12px 24px -4px rgba(0, 0, 0, 0.75);
+  }
+  .home__polaroid:hover .home__card-glow {
+    opacity: 1;
+    transform: scale(1.4);
   }
   .home__polaroid:hover .home__card-shadow {
-    transform: translateX(-50%) translateY(8px) scale(0.85);
-    opacity: 0.55;
+    transform: translateX(-50%) translateY(12px) scale(0.7);
+    opacity: 0.45;
   }
+  .home__polaroid:hover .home__photo img {
+    filter: brightness(1.05) contrast(1.08);
+    transform: scale(1.04);
+  }
+  .home__polaroid:hover .home__caption-title {
+    color: var(--c-ink-900);
+  }
+}
+
+.home__polaroid:active {
+  transform: rotate(calc(var(--rot, 0deg) * 0.5)) translateY(-4px) scale(0.98);
 }
 
 .home__peg {
   position: absolute;
-  top: -16px;
+  top: -1rem;
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(20px, 2.4vw, 28px);
+  width: clamp(1rem, 2.4vw, 1.7rem);
   height: auto;
   z-index: 2;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.65));
@@ -643,7 +600,7 @@ function openPolaroid(p: Poem): void {
     0 1px 0 rgba(255, 245, 220, 0.4),
     0 14px 28px -10px rgba(0, 0, 0, 0.75),
     0 3px 8px -2px rgba(0, 0, 0, 0.5);
-  transition: box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .home__card::before {
   content: '';
@@ -656,20 +613,40 @@ function openPolaroid(p: Poem): void {
   pointer-events: none;
 }
 
+/* warm glow that activates on hover */
+.home__card-glow {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+    ellipse 60% 60% at 50% 50%,
+    rgba(244, 208, 138, 0.35) 0%,
+    rgba(232, 176, 87, 0.18) 35%,
+    rgba(232, 176, 87, 0) 70%
+  );
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 360ms ease-out,
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(8px);
+}
+
 .home__card-shadow {
   position: absolute;
-  bottom: -18px;
+  bottom: -1.1rem;
   left: 50%;
   transform: translateX(-50%) scale(0.7);
   width: 80%;
-  height: 14px;
+  height: 0.85rem;
   background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 70%);
   filter: blur(5px);
   opacity: 0.75;
   z-index: -1;
   transition:
-    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 320ms ease-out;
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 360ms ease-out;
 }
 
 .home__photo {
@@ -689,6 +666,9 @@ function openPolaroid(p: Poem): void {
   object-fit: cover;
   display: block;
   filter: brightness(0.92) contrast(1.05);
+  transition:
+    filter 320ms ease-out,
+    transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .home__photo-shine {
@@ -709,95 +689,19 @@ function openPolaroid(p: Poem): void {
   position: relative;
   display: block;
   text-align: center;
-  padding: 7% 4% 0;
+  padding: 6% 4% 0;
   color: var(--c-ink-700);
 }
 .home__caption-title {
   display: block;
   font:
-    400 calc(clamp(10px, 0.9vw + 6px, 13px) * var(--user-font-scale, 1)) / 1.25 'Cormorant Garamond',
+    400 clamp(0.55rem, 0.7vw + 0.35rem, 0.85rem) / 1.2 'Cormorant Garamond',
     serif;
   letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.home__caption-date {
-  display: block;
-  margin-top: 2px;
-  font:
-    400 calc(clamp(8px, 0.6vw + 5px, 10px) * var(--user-font-scale, 1)) / 1.2 'Cormorant Garamond',
-    serif;
-  font-style: italic;
-  opacity: 0.6;
-}
-
-/* ── narrow viewport: carousel mode ── */
-@media (max-width: 767px) {
-  .home__room {
-    /* one rope visible at a time */
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0;
-    gap: 0;
-    transform: translateX(calc(var(--active-rope, 0) * -100%));
-    transition: transform var(--rope-fade) cubic-bezier(0.65, 0, 0.35, 1);
-  }
-  .home__rope {
-    flex: 0 0 100vw;
-    width: 100vw;
-    height: 100%;
-    align-items: center;
-    padding: clamp(48px, 10vh, 80px) var(--sp-md) clamp(80px, 14vh, 120px);
-  }
-  .home__rope[data-active='false'] {
-    opacity: 0.35;
-  }
-  .home__pegs {
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: var(--sp-md);
-  }
-}
-
-/* ── carousel indicator (mobile only) ── */
-.home__indicator {
-  position: absolute;
-  z-index: 9;
-  bottom: clamp(var(--sp-md), 4vh, var(--sp-xl));
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  gap: var(--sp-sm);
-  padding: var(--sp-xs) var(--sp-sm);
-  background: rgba(0, 0, 0, 0.45);
-  border-radius: 999px;
-  backdrop-filter: blur(4px);
-}
-.home__indicator-dot {
-  appearance: none;
-  background: transparent;
-  border: 1px solid rgba(244, 208, 138, 0.45);
-  border-radius: 50%;
-  width: 9px;
-  height: 9px;
-  padding: 0;
-  cursor: pointer;
-  transition:
-    background 200ms ease-out,
-    border-color 200ms ease-out,
-    transform 200ms ease-out;
-}
-.home__indicator-dot[data-active='true'] {
-  background: var(--c-focus);
-  border-color: var(--c-focus);
-  transform: scale(1.3);
-  box-shadow: 0 0 8px 2px rgba(244, 208, 138, 0.5);
-}
-.home__indicator-dot:focus-visible {
-  outline: 2px solid var(--c-focus);
-  outline-offset: 3px;
+  transition: color 240ms ease-out;
 }
 
 /* ── candle-cursor mask ── */
@@ -828,7 +732,6 @@ function openPolaroid(p: Poem): void {
   mix-blend-mode: screen;
 }
 
-/* the cursor candle SVG follows the pointer */
 .home__cursor-candle {
   position: fixed;
   width: clamp(28px, 3vw + 16px, 44px);
@@ -864,7 +767,6 @@ function openPolaroid(p: Poem): void {
   }
 }
 
-/* on touch devices, the cursor candle is hidden — there's no pointer hover */
 @media (pointer: coarse) {
   .home__cursor-candle {
     display: none;
@@ -881,13 +783,9 @@ function openPolaroid(p: Poem): void {
     animation: none !important;
   }
   .home__polaroid:hover {
-    transform: rotate(var(--rot, 0deg)) translateY(-3px);
-  }
-  .home__room {
-    transition: none !important;
+    transform: rotate(var(--rot, 0deg)) translateY(-4px);
   }
 }
-
 .home[data-rm='true'] .home__dust-mote {
   display: none;
 }
