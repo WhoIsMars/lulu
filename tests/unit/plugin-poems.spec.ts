@@ -128,13 +128,28 @@ describe('poemsPlugin', () => {
       expect(ctx.watched).toContain(path.join(root, 'public', 'photos'))
     })
 
-    it("throws ManifestValidationError when fixture manifest is invalid (missing photo)", () => {
+    it("throws ManifestValidationError in build mode when fixture manifest is invalid", () => {
       // YAML references Un_altro_sogno.JPG but disk only has Luce.jpg → orphan + missing
       const root = setupFixture(VALID_YAML, [['Luce.jpg', 'y']])
       const plugin = poemsPlugin({ rootDir: root })
+      // Simulate `configResolved` with build command so plugin enters strict mode.
+      const configResolved = plugin.configResolved as (this: unknown, cfg: { command: 'build' | 'serve' }) => void
+      configResolved.call({}, { command: 'build' })
       const ctx = makeCtx()
       const load = plugin.load as (this: MockCtx, id: string) => string
       expect(() => load.call(ctx, '\0virtual:poems')).toThrow(ManifestValidationError)
+    })
+
+    it("emits an error-throwing module in dev mode when fixture manifest is invalid", () => {
+      const root = setupFixture(VALID_YAML, [['Luce.jpg', 'y']])
+      const plugin = poemsPlugin({ rootDir: root })
+      // Default = dev mode (no configResolved call, isBuild stays false).
+      const ctx = makeCtx()
+      const load = plugin.load as (this: MockCtx, id: string) => string
+      const out = load.call(ctx, '\0virtual:poems')
+      // Module is generated, contains a throw, and includes the validation message.
+      expect(out).toContain('throw __error')
+      expect(out).toMatch(/Manifest invalido/)
     })
   })
 
