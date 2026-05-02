@@ -12,14 +12,14 @@ usePointerLight()
 const baseUrl = import.meta.env.BASE_URL
 
 /**
- * 3 ropes × 5 polaroids, all visible at once.
- * Each rope drops slightly below center so they form a slight cascade.
+ * Distribute ALL poems across 3 ropes — dynamic so adding/removing entries
+ * in manifest.yaml never drops polaroids from view.
  */
 const ROPE_COUNT = 3
-const POLAROIDS_PER_ROPE = 5
+const perRope = Math.ceil(poems.length / ROPE_COUNT)
 const ropes: Poem[][] = Array.from({ length: ROPE_COUNT }, (_, i) =>
-  poems.slice(i * POLAROIDS_PER_ROPE, (i + 1) * POLAROIDS_PER_ROPE),
-)
+  poems.slice(i * perRope, (i + 1) * perRope),
+).filter((r) => r.length > 0)
 
 function openPolaroid(p: Poem): void {
   void router.push({ name: 'polaroid', params: { slug: p.slug } })
@@ -438,33 +438,42 @@ function openPolaroid(p: Poem): void {
     0 0 0 3px var(--c-focus);
 }
 
+/* HOVER = MAGNIFYING LENS: polaroid leaps to foreground, scales 2.2×
+   bringing photo to readable size. Pause sway. Heavy z-index lift. */
 @media (hover: hover) and (pointer: fine) {
   .home__polaroid:hover {
-    animation-duration: 1.6s;
-    transform: rotate(calc(var(--rot, 0deg) * 0.2)) translateY(-14px) scale(1.08)
-      rotateX(-3deg);
-    z-index: 5;
+    animation-play-state: paused;
+    transform: rotate(0deg) translateY(-26px) scale(2.2);
+    z-index: 50;
+    transition:
+      transform 380ms cubic-bezier(0.18, 1, 0.32, 1),
+      filter 380ms ease-out;
   }
   .home__polaroid:hover .home__card {
     box-shadow:
-      0 2px 0 rgba(255, 245, 220, 0.6),
-      0 40px 70px -10px rgba(0, 0, 0, 0.95),
-      0 14px 28px -4px rgba(0, 0, 0, 0.75);
+      0 4px 0 rgba(255, 245, 220, 0.7),
+      0 60px 100px -10px rgba(0, 0, 0, 0.98),
+      0 24px 40px -6px rgba(0, 0, 0, 0.85),
+      0 0 0 1px rgba(255, 245, 220, 0.25);
   }
   .home__polaroid:hover .home__card-glow {
     opacity: 1;
-    transform: scale(1.5);
+    transform: scale(1.6);
   }
   .home__polaroid:hover .home__card-shadow {
-    transform: translateX(-50%) translateY(14px) scale(0.7);
-    opacity: 0.4;
+    transform: translateX(-50%) translateY(20px) scale(0.65);
+    opacity: 0.35;
   }
   .home__polaroid:hover .home__photo img {
-    filter: brightness(1.06) contrast(1.1) saturate(1.05);
-    transform: scale(1.04);
+    filter: brightness(1.1) contrast(1.12) saturate(1.08);
+    transform: scale(1.02);
   }
   .home__polaroid:hover .home__caption {
-    color: rgba(58, 44, 28, 0.95);
+    color: rgba(58, 44, 28, 0.98);
+  }
+  .home__polaroid:hover .home__peg {
+    /* peg follows the lift but doesn't scale — keeps proportion */
+    transform: translateX(-50%) translateY(0);
   }
 }
 

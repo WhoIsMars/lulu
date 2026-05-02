@@ -35,8 +35,10 @@ function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') close()
 }
 
-function onBackdropClick(e: MouseEvent): void {
-  if (e.target === e.currentTarget) close()
+/** Click anywhere in main = close, unless the event was stopped by the card,
+ *  back button, or zoom controls (each calls .stop() on their own handlers). */
+function onBackdropClick(): void {
+  close()
 }
 
 const stanzas = computed(() =>
@@ -74,7 +76,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       class="pview__back"
       type="button"
       aria-label="torna alla stanza"
-      @click="close"
+      @click.stop="close"
     >
       <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
         <path
@@ -88,19 +90,21 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       </svg>
     </button>
 
-    <div class="pview__controls">
+    <div class="pview__controls" @click.stop>
       <ZoomControls />
     </div>
 
-    <!-- stage with perspective; card-inner does the 3D rotation -->
-    <div class="pview__stage" @click.stop>
+    <!-- stage with perspective; card-inner does the 3D rotation.
+         Stage itself does NOT stop click — only the card does. So clicking
+         the empty area around the card bubbles up to <main> and closes. -->
+    <div class="pview__stage">
       <div
         class="pview__card"
         role="button"
         tabindex="0"
         :aria-pressed="flipped"
         :aria-label="flipped ? 'mostra la foto' : 'gira la polaroid per leggere la poesia'"
-        @click="flip"
+        @click.stop="flip"
         @keydown="onCardKey"
       >
         <div class="pview__inner" :class="{ 'pview__inner--flipped': flipped }">
@@ -317,15 +321,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   right: clamp(var(--sp-sm), 2vw, var(--sp-md));
 }
 
-/* ── stage: perspective applied here; the card-inner is what rotates ── */
+/* ── stage: perspective applied here; card aligned higher in viewport ── */
 .pview__stage {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
-  padding: clamp(4rem, 10vh, 6rem) var(--sp-md) clamp(1.5rem, 4vh, 2.5rem);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(4rem, 9vh, 5.5rem) var(--sp-md) clamp(1rem, 3vh, 2rem);
   perspective: 1800px;
   -webkit-perspective: 1800px;
 }
@@ -342,17 +347,42 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
 }
 
-/* ENTER: polaroid drops in from above with rotation, settles with bounce */
+/* ENTER — polaroid "approaches": starts tiny + blurred from far away,
+   grows toward viewer with a gentle wobble, settles slightly oversized then
+   relaxes to 1× (overshoot bounce). Cinematic, not mechanical. */
 .pview[data-entered='false'] .pview__card {
   opacity: 0;
-  transform: translateY(-60vh) rotate(-12deg) scale(0.92);
+  transform: scale(0.18) rotate(-4deg);
+  filter: blur(8px) drop-shadow(0 28px 56px rgba(0, 0, 0, 0.75));
 }
 .pview[data-entered='true'] .pview__card {
   opacity: 1;
-  transform: translateY(0) rotate(0deg) scale(1);
-  transition:
-    opacity var(--enter-duration) var(--enter-ease),
-    transform var(--enter-duration) var(--enter-ease);
+  transform: scale(1) rotate(0deg);
+  filter: blur(0) drop-shadow(0 28px 56px rgba(0, 0, 0, 0.75))
+    drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+  animation: pview-approach 1100ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes pview-approach {
+  0% {
+    opacity: 0;
+    transform: scale(0.18) rotate(-4deg);
+    filter: blur(8px);
+  }
+  40% {
+    opacity: 0.85;
+    transform: scale(0.7) rotate(-1.5deg);
+    filter: blur(2px);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1.06) rotate(0.6deg);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -591,7 +621,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 .pview__poem-body {
   font:
-    400 clamp(0.78rem, 0.7vw + 0.45rem, 1rem) / 1.5 'Cormorant Garamond',
+    400 clamp(0.82rem, 0.75vw + 0.5rem, 1.05rem) / 1.55 'Cormorant Garamond',
     serif;
   letter-spacing: 0.005em;
   text-align: center;
@@ -601,6 +631,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   -ms-overflow-style: none;
   padding: 0.3rem 0 0.4rem;
   color: rgba(26, 20, 12, 0.92);
+  /* HOVER MAGNIFIER on text for accessibility */
+  transition: transform 320ms cubic-bezier(0.18, 1, 0.32, 1);
+  transform-origin: center top;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pview__poem-body:hover {
+    transform: scale(1.12);
+  }
 }
 .pview__poem-body::-webkit-scrollbar {
   display: none;
@@ -612,15 +650,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 .pview__poem-stanza:last-child {
   margin-bottom: 0;
 }
-/* DROP CAP on the very first letter of the poem (Italianno), kept compact */
+/* Inline larger first letter on first stanza (no float — works with center
+   alignment and keeps "S" attached to "arà" reading as one word) */
 .pview__poem-stanza--first::first-letter {
   font:
-    400 2em / 0.9 'Italianno',
+    400 1.55em / 1 'Italianno',
     cursive;
-  float: left;
-  padding: 0.05em 0.15em 0 0;
   color: rgba(26, 20, 12, 0.95);
-  text-shadow: 0 1px 0 rgba(248, 232, 198, 0.4);
+  vertical-align: -0.08em;
+  margin-right: 0.02em;
 }
 .pview__inner--flipped .pview__poem-stanza {
   animation: pview-stanza-in 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
