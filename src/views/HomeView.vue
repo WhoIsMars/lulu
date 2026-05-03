@@ -3,13 +3,11 @@ import { useRouter } from 'vue-router'
 import { useReducedMotion } from '@/composables/useReducedMotion'
 import { usePointerLight } from '@/composables/usePointerLight'
 import { poems, type Poem } from '@/data/poems'
-import ZoomControls from '@/components/ZoomControls.vue'
+import PolaroidPicture from '@/components/PolaroidPicture.vue'
 
 const router = useRouter()
 const reducedMotion = useReducedMotion()
 usePointerLight()
-
-const baseUrl = import.meta.env.BASE_URL
 
 /**
  * Distribute ALL poems across 3 ropes — dynamic so adding/removing entries
@@ -38,11 +36,6 @@ function openPolaroid(p: Poem): void {
       <div class="home__moonbeam"></div>
       <div class="home__floor-light"></div>
       <div class="home__grain"></div>
-    </div>
-
-    <!-- top-right zoom -->
-    <div class="home__controls">
-      <ZoomControls />
     </div>
 
     <!-- room: 3 ropes, each polaroid hangs from its peg, the rope CURVES -->
@@ -117,11 +110,13 @@ function openPolaroid(p: Poem): void {
 
               <span class="home__card">
                 <span class="home__photo">
-                  <img
-                    :src="`${baseUrl}photos/${p.file}`"
+                  <PolaroidPicture
+                    :picture="p.picture"
+                    :lqip="p.lqip"
                     :alt="p.alt ?? p.title"
-                    loading="lazy"
-                    decoding="async"
+                    sizes="(max-width: 768px) 25vw, 11vw"
+                    :eager="ropeIdx === 0"
+                    :priority="ropeIdx === 0 ? 'auto' : 'low'"
                   />
                   <span class="home__photo-grain" aria-hidden="true"></span>
                   <span class="home__photo-vignette" aria-hidden="true"></span>
@@ -328,13 +323,6 @@ function openPolaroid(p: Poem): void {
   opacity: var(--grain-opacity);
   mix-blend-mode: overlay;
   pointer-events: none;
-}
-
-.home__controls {
-  position: absolute;
-  z-index: 9;
-  top: clamp(0.5rem, 2vh, 1rem);
-  right: clamp(0.5rem, 2vw, 1rem);
 }
 
 /* ── room: 3 ropes evenly spaced ── */
