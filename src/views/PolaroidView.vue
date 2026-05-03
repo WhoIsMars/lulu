@@ -60,15 +60,12 @@ function fitPoem(): void {
   if (!el) return
   let fit = 1
   el.style.setProperty('--fit', String(fit))
-  // measure: if overflowing, shrink in 0.04 steps down to 0.5 floor
+  // measure: if overflowing, shrink in 0.05 steps down to 0.5 floor
   for (let i = 0; i < 16; i += 1) {
     if (el.scrollHeight <= el.clientHeight + 1) break
-    fit -= 0.05
-    if (fit < 0.5) {
-      fit = 0.5
-      break
-    }
+    fit = Math.max(0.5, fit - 0.05)
     el.style.setProperty('--fit', String(fit))
+    if (fit <= 0.5) break
   }
 }
 

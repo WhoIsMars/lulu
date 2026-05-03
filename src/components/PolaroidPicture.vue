@@ -26,7 +26,7 @@ interface Props {
   priority?: 'high' | 'low' | 'auto'
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   sizes: '100vw',
   eager: false,
   priority: 'auto',
