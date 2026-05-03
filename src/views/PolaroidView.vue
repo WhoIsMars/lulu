@@ -3,7 +3,7 @@ import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useReducedMotion } from '@/composables/useReducedMotion'
 import { getPoem } from '@/data/poems'
-import ZoomControls from '@/components/ZoomControls.vue'
+import PolaroidPicture from '@/components/PolaroidPicture.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,7 +14,6 @@ const poem = computed(() => getPoem(slug.value))
 
 const flipped = ref(false)
 const entered = ref(false)
-const baseUrl = import.meta.env.BASE_URL
 
 function close(): void {
   void router.push({ name: 'home' })
@@ -45,6 +44,20 @@ const stanzas = computed(() =>
   (poem.value?.body ?? '').split(/\n\s*\n/).filter(Boolean),
 )
 
+/** Magnifying-lens tracking on poem area: as cursor moves over title/date/body,
+ *  we update CSS custom properties so transform-origin follows the pointer.
+ *  The article scales up on hover, anchored at the cursor → effetto lente. */
+const poemAreaRef = ref<HTMLElement | null>(null)
+function onLensMove(e: PointerEvent): void {
+  const el = poemAreaRef.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  const x = ((e.clientX - r.left) / r.width) * 100
+  const y = ((e.clientY - r.top) / r.height) * 100
+  el.style.setProperty('--lx', `${Math.max(0, Math.min(100, x))}%`)
+  el.style.setProperty('--ly', `${Math.max(0, Math.min(100, y))}%`)
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKey)
   void nextTick(() => {
@@ -71,28 +84,31 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       <div class="pview__grain"></div>
     </div>
 
-    <!-- vintage brass back button -->
+    <!-- back button: minimal ink chevron + handwritten cue on aged paper chip -->
     <button
       class="pview__back"
       type="button"
       aria-label="torna alla stanza"
       @click.stop="close"
     >
-      <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <svg
+        class="pview__back-arrow"
+        viewBox="0 0 40 24"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <!-- a hand-drawn arrow with a slight ink-pen taper -->
         <path
-          d="M 28 12 L 16 24 L 28 36 M 16 24 L 38 24"
+          d="M 36 12 L 6 12 M 14 5 L 5.5 12 L 14 19"
           stroke="currentColor"
-          stroke-width="2.2"
+          stroke-width="1.6"
           fill="none"
           stroke-linecap="round"
           stroke-linejoin="round"
         />
       </svg>
+      <span class="pview__back-label">stanza</span>
     </button>
-
-    <div class="pview__controls" @click.stop>
-      <ZoomControls />
-    </div>
 
     <!-- stage with perspective; card-inner does the 3D rotation.
          Stage itself does NOT stop click — only the card does. So clicking
@@ -111,11 +127,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
           <!-- FRONT — la foto -->
           <div class="pview__face pview__face--front">
             <div class="pview__photo">
-              <img
+              <PolaroidPicture
                 v-if="poem"
-                :src="`${baseUrl}photos/${poem.file}`"
+                :picture="poem.picture"
+                :lqip="poem.lqip"
                 :alt="poem.alt ?? poem.title"
-                decoding="async"
+                sizes="(max-width: 768px) 90vw, 26rem"
+                eager
+                priority="high"
               />
               <div class="pview__photo-grain" aria-hidden="true"></div>
               <div class="pview__photo-vignette" aria-hidden="true"></div>
@@ -130,7 +149,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
           <!-- BACK — la poesia su carta scritta a mano -->
           <div class="pview__face pview__face--back">
-            <article class="pview__poem">
+            <article
+              ref="poemAreaRef"
+              class="pview__poem"
+              @pointermove="onLensMove"
+            >
               <header class="pview__poem-header">
                 <h1 class="pview__poem-title">{{ poem ? poem.title : '' }}</h1>
                 <p class="pview__poem-date">{{ poem ? poem.date : '' }}</p>
@@ -229,7 +252,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   mix-blend-mode: overlay;
 }
 
-/* ── back button: small square brass badge with engraved arrow ── */
+/* ── back: handwritten ink cue on a small aged-paper chip ── */
 .pview__back {
   position: fixed;
   z-index: 10;
@@ -237,88 +260,71 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   left: clamp(0.75rem, 2.5vw, 1.5rem);
   appearance: none;
   border: 0;
-  padding: 0;
   cursor: pointer;
-  width: 3rem;
-  height: 3rem;
-  background: linear-gradient(
-    160deg,
-    #6b5635 0%,
-    #4a3a22 40%,
-    #2c2110 70%,
-    #1a140c 100%
-  );
-  border-radius: 3px;
-  color: rgba(232, 220, 192, 0.78);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem 0.55rem 0.7rem;
+  background: linear-gradient(168deg, #f2e6c6 0%, #e6d6ae 60%, #c9b485 100%);
+  color: rgba(38, 28, 16, 0.85);
+  border-radius: 2px;
   box-shadow:
-    inset 0 1px 0 rgba(232, 200, 130, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.7),
-    inset 1px 0 0 rgba(232, 200, 130, 0.18),
-    inset -1px 0 0 rgba(0, 0, 0, 0.5),
-    0 4px 10px -2px rgba(0, 0, 0, 0.7),
-    0 1px 2px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(255, 250, 225, 0.65),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 8px 16px -6px rgba(0, 0, 0, 0.6);
   transition:
-    background 320ms ease-out,
-    color 320ms ease-out,
-    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 280ms ease-out;
-}
-@media (min-width: 768px) {
-  .pview__back {
-    width: 3.4rem;
-    height: 3.4rem;
-  }
-}
-.pview__back svg {
-  width: 60%;
-  height: 60%;
-  display: block;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
-  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 280ms ease-out,
+    box-shadow 320ms ease-out,
+    background 320ms ease-out;
 }
 .pview__back::before {
+  /* paper grain on chip */
   content: '';
   position: absolute;
-  inset: 2px;
-  border-radius: 2px;
-  border: 0.5px solid rgba(232, 200, 130, 0.18);
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='pg'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='21' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.11  0 0 0 0 0.05  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23pg)'/></svg>");
+  background-size: 160px 160px;
+  opacity: 0.08;
+  mix-blend-mode: multiply;
   pointer-events: none;
+}
+.pview__back-arrow {
+  width: 1.4rem;
+  height: 0.85rem;
+  display: block;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 0.5px 0 rgba(255, 250, 225, 0.4));
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pview__back-label {
+  font:
+    400 1.15rem / 1 'Italianno',
+    cursive;
+  letter-spacing: 0.01em;
+  color: rgba(38, 28, 16, 0.85);
+  transform: translateY(0.05em);
 }
 .pview__back:hover,
 .pview__back:focus-visible {
-  background: linear-gradient(
-    160deg,
-    #826a44 0%,
-    #5c4830 40%,
-    #382a16 70%,
-    #1f1810 100%
-  );
-  color: rgba(248, 232, 198, 0.95);
-  transform: translateX(-2px);
+  background: linear-gradient(168deg, #faf0d2 0%, #efdfba 60%, #d4be8e 100%);
+  color: rgba(26, 18, 8, 0.95);
+  transform: translateX(-3px);
   box-shadow:
-    inset 0 1px 0 rgba(248, 220, 160, 0.5),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.7),
-    inset 1px 0 0 rgba(248, 220, 160, 0.25),
-    inset -1px 0 0 rgba(0, 0, 0, 0.5),
-    0 8px 18px -4px rgba(0, 0, 0, 0.8),
-    0 0 18px 2px rgba(232, 176, 87, 0.22);
+    inset 0 1px 0 rgba(255, 250, 225, 0.85),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 4px 8px rgba(0, 0, 0, 0.45),
+    0 14px 28px -8px rgba(0, 0, 0, 0.7),
+    0 0 22px 2px rgba(244, 208, 138, 0.22);
 }
-.pview__back:hover svg {
+.pview__back:hover .pview__back-arrow {
   transform: translateX(-3px);
 }
 .pview__back:focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 4px;
-}
-
-.pview__controls {
-  position: fixed;
-  z-index: 10;
-  top: clamp(var(--sp-sm), 2vh, var(--sp-md));
-  right: clamp(var(--sp-sm), 2vw, var(--sp-md));
 }
 
 /* ── stage: perspective applied here; card aligned higher in viewport ── */
@@ -386,9 +392,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .pview__card:hover {
-    filter: drop-shadow(0 32px 64px rgba(0, 0, 0, 0.85))
-      drop-shadow(0 0 36px rgba(244, 208, 138, 0.16));
+  .pview__card {
+    transition:
+      transform 420ms cubic-bezier(0.18, 1, 0.32, 1),
+      filter 420ms ease-out;
+  }
+  /* hover-magnify: card itself grows toward viewer (only when not flipped,
+     so we don't fight the flip transform). */
+  .pview[data-entered='true']:not([data-flipped='true']) .pview__card:hover {
+    transform: scale(1.18);
+    filter: drop-shadow(0 36px 72px rgba(0, 0, 0, 0.9))
+      drop-shadow(0 0 44px rgba(244, 208, 138, 0.22));
   }
 }
 
@@ -576,6 +590,18 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* magnifying-lens: scale anchored at cursor via --lx/--ly (set by JS).
+     transform-origin tracks pointer so the area under cursor stays under it. */
+  --lx: 50%;
+  --ly: 50%;
+  transform-origin: var(--lx) var(--ly);
+  transition: transform 280ms cubic-bezier(0.18, 1, 0.32, 1);
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pview__poem:hover {
+    transform: scale(1.5);
+  }
 }
 .pview__poem-header {
   text-align: center;
@@ -621,7 +647,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
 .pview__poem-body {
   font:
-    400 clamp(0.82rem, 0.75vw + 0.5rem, 1.05rem) / 1.55 'Cormorant Garamond',
+    400 clamp(0.74rem, 0.55vw + 0.5rem, 0.95rem) / 1.45 'Cormorant Garamond',
     serif;
   letter-spacing: 0.005em;
   text-align: center;
@@ -629,16 +655,22 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 0.3rem 0 0.4rem;
+  padding: 0.3rem 0 0.6rem;
   color: rgba(26, 20, 12, 0.92);
-  /* HOVER MAGNIFIER on text for accessibility */
-  transition: transform 320ms cubic-bezier(0.18, 1, 0.32, 1);
-  transform-origin: center top;
-}
-@media (hover: hover) and (pointer: fine) {
-  .pview__poem-body:hover {
-    transform: scale(1.12);
-  }
+  /* fade out at bottom: hints there's more poem to scroll, also masks the
+     hard cut against the paper edge for poems that overflow. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 1.4rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 1.4rem),
+    transparent 100%
+  );
 }
 .pview__poem-body::-webkit-scrollbar {
   display: none;
@@ -693,6 +725,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   }
   .pview__warm {
     transition: none !important;
+  }
+  .pview__poem {
+    transition: none !important;
+  }
+  .pview__poem:hover {
+    transform: none !important;
   }
 }
 </style>
