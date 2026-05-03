@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { imagetools } from 'vite-imagetools'
 import { fileURLToPath, URL } from 'node:url'
 import { resolve } from 'node:path'
 import { poemsPlugin } from './vite/plugin-poems'
@@ -22,7 +23,22 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     base: env.VITE_BASE ?? '/',
-    plugins: [vue(), poemsPlugin()],
+    plugins: [
+      vue(),
+      // imagetools — only transforms imports that explicitly opt in via
+      // `as=picture` (or any of the known directives). Other asset imports
+      // pass through untouched. removeMetadata defaults to true (Phase 4
+      // ASSET-04 — confirmed by the post-build EXIF assertion).
+      imagetools({
+        defaultDirectives: (url) => {
+          // Only act when the consumer explicitly requested a picture or
+          // metadata transform. Leaves <link>/<img>-as-URL imports alone.
+          if (url.searchParams.has('as')) return new URLSearchParams()
+          return new URLSearchParams()
+        },
+      }),
+      poemsPlugin(),
+    ],
     resolve: {
       alias: { '@': resolveSrcPath() },
     },
