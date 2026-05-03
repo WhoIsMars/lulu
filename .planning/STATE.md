@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-05-02T13:28:54.741Z"
+status: human_needed
+last_updated: "2026-05-03T00:00:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_phases: 6
+  total_plans: 9
+  completed_plans: 9
+  percent: 95
 ---
 
 # State: Lulu — Polaroid & Poesie
 
-**Last updated:** 2026-05-02
+**Last updated:** 2026-05-03
 
 ## Project Reference
 
@@ -22,17 +22,16 @@ See `.planning/PROJECT.md` for full project context.
 
 **Core value (one-liner):** L'esperienza emotiva di scoprire una poesia dietro una foto deve funzionare in modo magico, fluido e accessibile.
 
-**Current focus:** Phase 1 — Foundation + Deploy + Soft Gate
+**Current focus:** Phase 7 — pending owner manual checks (real iPhone golden path + Lighthouse mobile)
 
 ## Current Position
 
-Phase: 1 (Foundation + Deploy + Soft Gate) — EXECUTING
-Plan: 1 of 5
+Phase: 7 (Hardening + A11y Audit + Ship) — HUMAN_NEEDED
 
 - **Milestone:** v1
-- **Phase:** 1 — Foundation + Deploy + Soft Gate
-- **Plan:** Not yet planned (next: `/gsd-plan-phase 1`)
-- **Status:** Executing Phase 1
+- **Phase:** 7 — Hardening + A11y Audit + Ship
+- **Status:** Automated gates pass (axe-core, bundle budget, heap smoke, e2e). Manual gates open: Lighthouse mobile, real iPhone end-to-end test, owner go-live confirmation.
+- **Resume with:** `/gsd-verify-work 7` after manual checks, then `/gsd-complete-milestone v1.0`
 
 **Progress**
 

@@ -16,13 +16,13 @@ A11Y-* requirements are cross-cutting in spirit but each is owned by a single ph
 
 ## Phases
 
-- [ ] **Phase 1: Foundation + Deploy + Soft Gate** — Skeleton SPA deployed to live Pages preview, gated by PBKDF2 password, base path + 404 SPA fallback solved on day one
-- [ ] **Phase 2: Content Pipeline + Manifest Validation** — Typed `poems` and `manifest` modules built at compile time, build fails on drift
-- [ ] **Phase 3: Static Room + Polaroid Layout + Reading View** — Semantic, a11y-correct, animation-free version of every surface (room, polaroid grid, modal route, reading view, A−/A+)
-- [ ] **Phase 4: Asset Pipeline (Photos)** — AVIF/WebP/JPEG with srcset, LQIP placeholders, EXIF stripped, lazy + eager strategy
-- [ ] **Phase 5: Candle Reveal** — Single-rAF GPU-composited candle following pointer/touch, reduced-motion variant, iOS Safari verified
-- [ ] **Phase 6: Idle Sway + Flip Animation + Pinch Zoom** — CSS keyframe sway, GSAP Flip cinematic transition, rotateY card flip, prev/next navigation, photo pinch-zoom
-- [ ] **Phase 7: Hardening + A11y Audit + Ship** — axe-core CI, perf budgets, memory-leak smoke, real-iPhone preview, README + ship
+- [x] **Phase 1: Foundation + Deploy + Soft Gate** — Skeleton SPA deployed to live Pages preview, gated by PBKDF2 password, base path + 404 SPA fallback solved on day one
+- [x] **Phase 2: Content Pipeline + Manifest Validation** — Typed `poems` and `manifest` modules built at compile time, build fails on drift
+- [x] **Phase 3: Static Room + Polaroid Layout + Reading View** — Semantic, a11y-correct, animation-free version of every surface (room, polaroid grid, modal route, reading view, A−/A+)
+- [x] **Phase 4: Asset Pipeline (Photos)** — AVIF/WebP/JPEG with srcset, LQIP placeholders, EXIF stripped, lazy + eager strategy
+- [x] **Phase 5: Candle Reveal** — Single-rAF GPU-composited candle following pointer/touch, reduced-motion variant, iOS Safari verified
+- [x] **Phase 6: Idle Sway + Flip Animation + Pinch Zoom** — CSS keyframe sway, GSAP Flip cinematic transition, rotateY card flip, prev/next navigation, photo pinch-zoom
+- [~] **Phase 7: Hardening + A11y Audit + Ship** — axe-core CI, perf budgets, memory-leak smoke, real-iPhone preview, README + ship
 
 ## Phase Details
 
