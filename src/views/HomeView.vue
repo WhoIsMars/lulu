@@ -430,8 +430,10 @@ function openPolaroid(p: Poem): void {
    bringing photo to readable size. Pause sway. Heavy z-index lift. */
 @media (hover: hover) and (pointer: fine) {
   .home__polaroid:hover {
-    animation-play-state: paused;
-    transform: rotate(0deg) translateY(-26px) scale(2.2);
+    /* must override the running sway animation, otherwise the animation's
+       transform takes precedence over the hover transform */
+    animation: none !important;
+    transform: rotate(0deg) translateY(-26px) scale(2.4);
     z-index: 50;
     transition:
       transform 380ms cubic-bezier(0.18, 1, 0.32, 1),
@@ -452,7 +454,7 @@ function openPolaroid(p: Poem): void {
     transform: translateX(-50%) translateY(20px) scale(0.65);
     opacity: 0.35;
   }
-  .home__polaroid:hover .home__photo img {
+  .home__polaroid:hover .home__photo :deep(img) {
     filter: brightness(1.1) contrast(1.12) saturate(1.08);
     transform: scale(1.02);
   }

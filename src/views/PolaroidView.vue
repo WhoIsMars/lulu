@@ -40,31 +40,55 @@ function onBackdropClick(): void {
   close()
 }
 
+/** Each stanza is split into lines; each line is rendered as its own
+ *  block-level span so it can hover-zoom independently (line-by-line lens). */
 const stanzas = computed(() =>
-  (poem.value?.body ?? '').split(/\n\s*\n/).filter(Boolean),
+  (poem.value?.body ?? '')
+    .split(/\n\s*\n/)
+    .filter(Boolean)
+    .map((stanza) => stanza.split('\n')),
 )
 
-/** Magnifying-lens tracking on poem area: as cursor moves over title/date/body,
- *  we update CSS custom properties so transform-origin follows the pointer.
- *  The article scales up on hover, anchored at the cursor → effetto lente. */
 const poemAreaRef = ref<HTMLElement | null>(null)
-function onLensMove(e: PointerEvent): void {
-  const el = poemAreaRef.value
+const poemBodyRef = ref<HTMLElement | null>(null)
+
+/** Auto-fit: shrink --fit on the body until its scrollHeight ≤ clientHeight,
+ *  so even the longest poem renders entirely inside the polaroid back without
+ *  scroll. Runs after layout settles (post-flip) and on resize. */
+function fitPoem(): void {
+  const el = poemBodyRef.value
   if (!el) return
-  const r = el.getBoundingClientRect()
-  const x = ((e.clientX - r.left) / r.width) * 100
-  const y = ((e.clientY - r.top) / r.height) * 100
-  el.style.setProperty('--lx', `${Math.max(0, Math.min(100, x))}%`)
-  el.style.setProperty('--ly', `${Math.max(0, Math.min(100, y))}%`)
+  let fit = 1
+  el.style.setProperty('--fit', String(fit))
+  // measure: if overflowing, shrink in 0.04 steps down to 0.5 floor
+  for (let i = 0; i < 16; i += 1) {
+    if (el.scrollHeight <= el.clientHeight + 1) break
+    fit -= 0.05
+    if (fit < 0.5) {
+      fit = 0.5
+      break
+    }
+    el.style.setProperty('--fit', String(fit))
+  }
 }
+
+let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   window.addEventListener('keydown', onKey)
   void nextTick(() => {
     entered.value = true
+    fitPoem()
   })
+  if (poemBodyRef.value) {
+    resizeObserver = new ResizeObserver(() => fitPoem())
+    resizeObserver.observe(poemBodyRef.value)
+  }
 })
-onUnmounted(() => window.removeEventListener('keydown', onKey))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKey)
+  resizeObserver?.disconnect()
+})
 </script>
 
 <template>
@@ -149,16 +173,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
           <!-- BACK — la poesia su carta scritta a mano -->
           <div class="pview__face pview__face--back">
-            <article
-              ref="poemAreaRef"
-              class="pview__poem"
-              @pointermove="onLensMove"
-            >
+            <article ref="poemAreaRef" class="pview__poem">
               <header class="pview__poem-header">
                 <h1 class="pview__poem-title">{{ poem ? poem.title : '' }}</h1>
                 <p class="pview__poem-date">{{ poem ? poem.date : '' }}</p>
               </header>
               <div
+                ref="poemBodyRef"
                 class="pview__poem-body"
                 tabindex="0"
                 role="region"
@@ -171,13 +192,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
                   :class="{ 'pview__poem-stanza--first': i === 0 }"
                   :style="{ '--stanza-i': i }"
                 >
-                  <template
-                    v-for="(line, j) in stanza.split('\n')"
+                  <span
+                    v-for="(line, j) in stanza"
                     :key="j"
-                  >
-                    {{ line
-                    }}<br v-if="j < stanza.split('\n').length - 1" />
-                  </template>
+                    class="pview__poem-line"
+                  >{{ line }}</span>
                 </p>
               </div>
             </article>
@@ -595,18 +614,33 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* magnifying-lens: scale anchored at cursor via --lx/--ly (set by JS).
-     transform-origin tracks pointer so the area under cursor stays under it. */
-  --lx: 50%;
-  --ly: 50%;
-  transform-origin: var(--lx) var(--ly);
-  transition: transform 280ms cubic-bezier(0.18, 1, 0.32, 1);
-  will-change: transform;
 }
+
+/* line-by-line magnifier: title, date, and each line of body all hover-zoom
+   independently. Hovered line lifts above its siblings (z-index + scale
+   transform-origin center) and snaps back when cursor leaves. */
 @media (hover: hover) and (pointer: fine) {
-  .pview__poem:hover {
-    transform: scale(1.5);
+  .pview__poem-title,
+  .pview__poem-date,
+  .pview__poem-line {
+    display: block;
+    transform-origin: center center;
+    transition:
+      transform 200ms cubic-bezier(0.18, 1, 0.32, 1),
+      color 200ms ease-out;
+    position: relative;
+    will-change: transform;
   }
+  .pview__poem-title:hover,
+  .pview__poem-date:hover,
+  .pview__poem-line:hover {
+    transform: scale(2);
+    z-index: 5;
+    color: rgba(10, 6, 2, 1);
+  }
+}
+.pview__poem-line {
+  display: block;
 }
 .pview__poem-header {
   text-align: center;
@@ -651,34 +685,20 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 }
 
 .pview__poem-body {
+  /* base font-size; auto-fit script multiplies via --fit (default 1).
+     For long poems the script shrinks --fit until content fits without
+     scroll, so the entire poem reads inside the polaroid. */
+  --fit: 1;
   font:
-    400 clamp(0.74rem, 0.55vw + 0.5rem, 0.95rem) / 1.45 'Cormorant Garamond',
+    400 calc(clamp(0.74rem, 0.55vw + 0.5rem, 0.95rem) * var(--fit)) / 1.4
+      'Cormorant Garamond',
     serif;
   letter-spacing: 0.005em;
   text-align: center;
   flex: 1 1 auto;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding: 0.3rem 0 0.6rem;
+  overflow: hidden;
+  padding: 0.3rem 0 0.4rem;
   color: rgba(26, 20, 12, 0.92);
-  /* fade out at bottom: hints there's more poem to scroll, also masks the
-     hard cut against the paper edge for poems that overflow. */
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    black 0,
-    black calc(100% - 1.4rem),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    black 0,
-    black calc(100% - 1.4rem),
-    transparent 100%
-  );
-}
-.pview__poem-body::-webkit-scrollbar {
-  display: none;
 }
 .pview__poem-stanza {
   margin: 0 0 0.55rem;
@@ -731,10 +751,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
   .pview__warm {
     transition: none !important;
   }
-  .pview__poem {
+  .pview__poem-title,
+  .pview__poem-date,
+  .pview__poem-line {
     transition: none !important;
   }
-  .pview__poem:hover {
+  .pview__poem-title:hover,
+  .pview__poem-date:hover,
+  .pview__poem-line:hover {
     transform: none !important;
   }
 }
