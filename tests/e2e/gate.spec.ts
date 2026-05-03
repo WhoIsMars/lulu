@@ -1,8 +1,13 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('gate', () => {
-  test('rest state: shows password input and Entra button on /gate', async ({ page }) => {
+  test('rest state: shows envelope CTA, opens to password input on /gate', async ({ page }) => {
     await page.goto('./gate')
+    // Closed: envelope button is the visible CTA, NOT the password input.
+    const envelope = page.getByRole('button', { name: 'apri la lettera' })
+    await expect(envelope).toBeVisible()
+    // Open the letter to reveal the password form.
+    await envelope.click()
     await expect(page.getByLabel('password')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Entra' })).toBeVisible()
     // Locked redirect: visiting / sends to /gate as well
@@ -14,7 +19,9 @@ test.describe('gate', () => {
     page,
   }) => {
     await page.goto('./gate')
+    await page.getByRole('button', { name: 'apri la lettera' }).click()
     const input = page.getByLabel('password')
+    await expect(input).toBeVisible()
     await input.fill('definitely-not-the-password')
     const start = Date.now()
     await page.getByRole('button', { name: 'Entra' }).click()
@@ -30,7 +37,10 @@ test.describe('gate', () => {
     page,
   }) => {
     await page.goto('./gate')
-    await page.getByLabel('password').fill('lulu-dev-placeholder')
+    await page.getByRole('button', { name: 'apri la lettera' }).click()
+    const input = page.getByLabel('password')
+    await expect(input).toBeVisible()
+    await input.fill('lulu-dev-placeholder')
     await page.getByRole('button', { name: 'Entra' }).click()
     // After unlock, router redirects to home; aria-label="stanza" landmark is present.
     await expect(page.locator('main[aria-label="stanza"]')).toBeVisible({ timeout: 5000 })

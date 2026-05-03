@@ -157,7 +157,7 @@ function onInput(): void {
         type="button"
         :tabindex="state === 'closed' ? 0 : -1"
         :aria-hidden="state === 'opened' ? true : undefined"
-        aria-label="password"
+        aria-label="apri la lettera"
         @click="openLetter"
       >
         <div class="gate__env-shadow"></div>

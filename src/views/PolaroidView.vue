@@ -158,7 +158,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
                 <h1 class="pview__poem-title">{{ poem ? poem.title : '' }}</h1>
                 <p class="pview__poem-date">{{ poem ? poem.date : '' }}</p>
               </header>
-              <div class="pview__poem-body">
+              <div
+                class="pview__poem-body"
+                tabindex="0"
+                role="region"
+                aria-label="testo della poesia"
+              >
                 <p
                   v-for="(stanza, i) in stanzas"
                   :key="i"
