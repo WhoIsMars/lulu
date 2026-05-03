@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useReducedMotion } from '@/composables/useReducedMotion'
-import { getPoem } from '@/data/poems'
+import { getPoem, getNextPoem, getPrevPoem } from '@/data/poems'
 import PolaroidPicture from '@/components/PolaroidPicture.vue'
 
 const route = useRoute()
@@ -30,8 +30,20 @@ function onCardKey(e: KeyboardEvent): void {
   }
 }
 
+function goPrev(): void {
+  const p = getPrevPoem(slug.value)
+  if (p) void router.push({ name: 'polaroid', params: { slug: p.slug } })
+}
+
+function goNext(): void {
+  const p = getNextPoem(slug.value)
+  if (p) void router.push({ name: 'polaroid', params: { slug: p.slug } })
+}
+
 function onKey(e: KeyboardEvent): void {
   if (e.key === 'Escape') close()
+  else if (e.key === 'ArrowLeft') goPrev()
+  else if (e.key === 'ArrowRight') goNext()
 }
 
 /** Click anywhere in main = close, unless the event was stopped by the card,
@@ -129,6 +141,42 @@ onUnmounted(() => {
         />
       </svg>
       <span class="pview__back-label">stanza</span>
+    </button>
+
+    <!-- prev / next: paper chips on left/right edges, mid-height -->
+    <button
+      class="pview__nav pview__nav--prev"
+      type="button"
+      aria-label="poesia precedente"
+      @click.stop="goPrev"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M 16 4 L 8 12 L 16 20"
+          stroke="currentColor"
+          stroke-width="1.8"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <button
+      class="pview__nav pview__nav--next"
+      type="button"
+      aria-label="poesia successiva"
+      @click.stop="goNext"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          d="M 8 4 L 16 12 L 8 20"
+          stroke="currentColor"
+          stroke-width="1.8"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
     </button>
 
     <!-- stage with perspective; card-inner does the 3D rotation.
@@ -344,6 +392,90 @@ onUnmounted(() => {
   transform: translateX(-3px);
 }
 .pview__back:focus-visible {
+  outline: 2px solid var(--c-focus);
+  outline-offset: 4px;
+}
+
+/* ── prev / next: small paper chips on the side edges, vertically centered.
+   Same aged-paper aesthetic as the back chip but compact + arrow-only. ── */
+.pview__nav {
+  position: fixed;
+  z-index: 10;
+  top: 50%;
+  transform: translateY(-50%);
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  background: linear-gradient(168deg, #f2e6c6 0%, #e6d6ae 60%, #c9b485 100%);
+  color: rgba(38, 28, 16, 0.85);
+  border-radius: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 225, 0.65),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.4),
+    0 8px 16px -6px rgba(0, 0, 0, 0.6);
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 280ms ease-out,
+    box-shadow 320ms ease-out,
+    background 320ms ease-out;
+}
+.pview__nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='pgn'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' seed='29' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.11  0 0 0 0 0.05  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23pgn)'/></svg>");
+  background-size: 160px 160px;
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.pview__nav svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+  filter: drop-shadow(0 0.5px 0 rgba(255, 250, 225, 0.4));
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pview__nav--prev {
+  left: clamp(0.5rem, 2vw, 1.25rem);
+}
+.pview__nav--next {
+  right: clamp(0.5rem, 2vw, 1.25rem);
+}
+.pview__nav:hover,
+.pview__nav:focus-visible {
+  background: linear-gradient(168deg, #faf0d2 0%, #efdfba 60%, #d4be8e 100%);
+  color: rgba(26, 18, 8, 0.95);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 225, 0.85),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 4px 8px rgba(0, 0, 0, 0.45),
+    0 14px 28px -8px rgba(0, 0, 0, 0.7),
+    0 0 22px 2px rgba(244, 208, 138, 0.22);
+}
+.pview__nav--prev:hover,
+.pview__nav--prev:focus-visible {
+  transform: translateY(-50%) translateX(-3px);
+}
+.pview__nav--prev:hover svg {
+  transform: translateX(-2px);
+}
+.pview__nav--next:hover,
+.pview__nav--next:focus-visible {
+  transform: translateY(-50%) translateX(3px);
+}
+.pview__nav--next:hover svg {
+  transform: translateX(2px);
+}
+.pview__nav:focus-visible {
   outline: 2px solid var(--c-focus);
   outline-offset: 4px;
 }
