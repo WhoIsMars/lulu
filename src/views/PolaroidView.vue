@@ -211,8 +211,8 @@ onUnmounted(() => {
 
 <style scoped>
 .pview {
-  --card-w: clamp(18rem, 60vw, 26rem);
-  --card-h: clamp(26rem, 80dvh, 40rem);
+  --card-w: min(90vw, calc(90dvh / 1.4));
+  --card-h: calc(var(--card-w) * 1.4);
   --card-photo-h: calc(var(--card-w) * 0.96);
   --grain-opacity: 0.06;
   --vignette-strength: 0.92;
@@ -360,7 +360,7 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: clamp(4rem, 9vh, 5.5rem) var(--sp-md) clamp(1rem, 3vh, 2rem);
+  padding: clamp(2rem, 5vh, 3.5rem) var(--sp-sm) clamp(0.5rem, 1.5vh, 1rem);
   perspective: 1800px;
   -webkit-perspective: 1800px;
 }
@@ -370,7 +370,7 @@ onUnmounted(() => {
   position: relative;
   width: var(--card-w);
   height: var(--card-h);
-  max-height: calc(100dvh - 8rem);
+  max-height: calc(100dvh - 4rem);
   cursor: pointer;
   outline: none;
   filter: drop-shadow(0 28px 56px rgba(0, 0, 0, 0.75))
@@ -634,7 +634,7 @@ onUnmounted(() => {
   .pview__poem-title:hover,
   .pview__poem-date:hover,
   .pview__poem-line:hover {
-    transform: scale(2);
+    transform: scale(2.8);
     z-index: 5;
     color: rgba(10, 6, 2, 1);
   }

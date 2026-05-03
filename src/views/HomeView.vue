@@ -22,6 +22,20 @@ const ropes: Poem[][] = Array.from({ length: ROPE_COUNT }, (_, i) =>
 function openPolaroid(p: Poem): void {
   void router.push({ name: 'polaroid', params: { slug: p.slug } })
 }
+
+/** On pointerenter we measure the polaroid position and write its offset
+ *  to viewport-center as CSS vars (--hx, --hy). The :hover rule then
+ *  translates by exactly that offset, so every polaroid — corner, middle,
+ *  or edge — flies to dead-center of the viewport before scaling up. */
+function onPolaroidEnter(e: PointerEvent): void {
+  const el = e.currentTarget as HTMLElement | null
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  const dx = window.innerWidth / 2 - (r.left + r.width / 2)
+  const dy = window.innerHeight / 2 - (r.top + r.height / 2)
+  el.style.setProperty('--hx', `${dx}px`)
+  el.style.setProperty('--hy', `${dy}px`)
+}
 </script>
 
 <template>
@@ -86,6 +100,7 @@ function openPolaroid(p: Poem): void {
               type="button"
               :aria-label="`${p.title}, ${p.date}`"
               @click="openPolaroid(p)"
+              @pointerenter="onPolaroidEnter"
             >
               <span class="home__peg" aria-hidden="true">
                 <svg viewBox="0 0 26 32" aria-hidden="true" focusable="false">
@@ -430,13 +445,17 @@ function openPolaroid(p: Poem): void {
    bringing photo to readable size. Pause sway. Heavy z-index lift. */
 @media (hover: hover) and (pointer: fine) {
   .home__polaroid:hover {
-    /* must override the running sway animation, otherwise the animation's
-       transform takes precedence over the hover transform */
+    /* center on viewport via JS-measured offset (--hx, --hy on enter), then
+       scale 3.5× so the polaroid is dead-center and big enough to read.
+       animation:none overrides the running sway's transform. */
     animation: none !important;
-    transform: rotate(0deg) translateY(-26px) scale(2.4);
-    z-index: 50;
+    transform:
+      translate(var(--hx, 0px), var(--hy, 0px))
+      rotate(0deg)
+      scale(3.5);
+    z-index: 100;
     transition:
-      transform 380ms cubic-bezier(0.18, 1, 0.32, 1),
+      transform 420ms cubic-bezier(0.18, 1, 0.32, 1),
       filter 380ms ease-out;
   }
   .home__polaroid:hover .home__card {
