@@ -452,7 +452,7 @@ function onPolaroidEnter(e: PointerEvent): void {
     transform:
       translate(var(--hx, 0px), var(--hy, 0px))
       rotate(0deg)
-      scale(3.5);
+      scale(2.8);
     z-index: 100;
     transition:
       transform 420ms cubic-bezier(0.18, 1, 0.32, 1),
