@@ -39,3 +39,25 @@ export const PoemSchema = z.object({
 })
 
 export type Poem = z.infer<typeof PoemSchema>
+
+/**
+ * Phase 4 (ASSET-01/02/03): photo asset descriptor attached to each poem.
+ *
+ * `picture` mirrors vite-imagetools `as=picture` output:
+ *   - `sources`: short-format-token (e.g. 'avif', 'webp', 'jpg') → srcset string
+ *   - `img`: fallback URL + intrinsic width/height for `<img>` (`w`/`h` are CSS px)
+ * `lqip` is a base64 data URL of a 16-px WebP placeholder produced at build by
+ * sharp (see vite/plugin-poems.ts).
+ */
+export interface PoemPicture {
+  sources: Record<string, string>
+  img: { src: string; w: number; h: number }
+}
+
+export interface PoemAssets {
+  picture: PoemPicture
+  lqip: string
+}
+
+export type PoemWithAssets = Poem & PoemAssets
+

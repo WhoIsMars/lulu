@@ -1,14 +1,23 @@
 /**
- * Vite plugin that resolves the `virtual:poems` module (Phase 2, CONT-01).
+ * Vite plugin that resolves the `virtual:poems` module (Phase 2, CONT-01;
+ * extended in Phase 4 to attach photo `picture` + `lqip` assets — ASSET-01..04).
  *
  * Pipeline:
  *   - resolveId('virtual:poems')  → '\0virtual:poems'
- *   - load(...)                    → calls loadManifest() (Plan 02-01) and emits
- *                                    a TypeScript module string with `poems`
- *                                    array + helpers `getPoem/getNextPoem/getPrevPoem`.
+ *   - load(...)                    → calls loadManifest() (Plan 02-01),
+ *                                    builds LQIP base64 thumbnails via sharp,
+ *                                    and emits a TypeScript module containing:
+ *                                      * an `import.meta.glob` call that pulls
+ *                                        every photo through vite-imagetools
+ *                                        with `as=picture` (AVIF/WebP/JPEG +
+ *                                        responsive srcset),
+ *                                      * a `lqips` map of slug → data URL,
+ *                                      * the `poems` array with `picture` +
+ *                                        `lqip` fields attached,
+ *                                      * helpers `getPoem/getNextPoem/getPrevPoem`.
  *   - configureServer              → hooks into server.watcher to add explicit
  *                                    watches on poems.txt, manifest.yaml, and
- *                                    public/photos/ (so add/remove/rename
+ *                                    src/assets/photos/ (so add/remove/rename
  *                                    triggers HMR even on files not yet
  *                                    referenced in the dep graph).
  *   - handleHotUpdate              → invalidates the virtual module + sends
@@ -19,6 +28,8 @@
  * the build aborts (D-06 — build-time validation gate).
  */
 import path from 'node:path'
+import { readFileSync } from 'node:fs'
+import sharp from 'sharp'
 import type { Plugin, ViteDevServer } from 'vite'
 import { loadManifest, ManifestValidationError } from './manifest-loader'
 import type { Poem } from './poem-schema'
@@ -35,7 +46,7 @@ export function poemsPlugin(opts: PoemsPluginOptions = {}): Plugin {
   const rootDir = opts.rootDir ?? process.cwd()
   const poemsTxt = path.join(rootDir, 'poems.txt')
   const manifestYaml = path.join(rootDir, 'content', 'manifest.yaml')
-  const photosDir = path.join(rootDir, 'public', 'photos')
+  const photosDir = path.join(rootDir, 'src', 'assets', 'photos')
 
   let server: ViteDevServer | undefined
   let isBuild = false
@@ -52,7 +63,7 @@ export function poemsPlugin(opts: PoemsPluginOptions = {}): Plugin {
       return undefined
     },
 
-    load(id: string): string | undefined {
+    async load(id: string): Promise<string | undefined> {
       if (id !== RESOLVED_ID) return undefined
 
       try {
@@ -64,7 +75,24 @@ export function poemsPlugin(opts: PoemsPluginOptions = {}): Plugin {
         // server.watcher.add() in configureServer instead.
         this.addWatchFile(poemsTxt)
         this.addWatchFile(manifestYaml)
-        return generateModuleSource(poems)
+
+        // Phase 4 (ASSET-03): build LQIP map — slug → 16-px WebP base64 data URL.
+        // Done synchronously in the plugin (per-photo cost ≈ 5–10 ms; 15 photos
+        // total ≈ 100 ms on a warm cache). Sharp is already a transitive dep
+        // through vite-imagetools.
+        const lqipMap: Record<string, string> = {}
+        for (const p of poems) {
+          const filePath = path.join(photosDir, p.file)
+          this.addWatchFile(filePath)
+          const buf = readFileSync(filePath)
+          const lqipBuf = await sharp(buf)
+            .resize({ width: 16, fit: 'inside' })
+            .webp({ quality: 20 })
+            .toBuffer()
+          lqipMap[p.slug] = `data:image/webp;base64,${lqipBuf.toString('base64')}`
+        }
+
+        return generateModuleSource(poems, lqipMap)
       } catch (err: unknown) {
         if (isBuild) {
           // Build mode — fail loudly so CI aborts before producing a broken bundle.
@@ -72,7 +100,12 @@ export function poemsPlugin(opts: PoemsPluginOptions = {}): Plugin {
         }
         // Dev mode — emit a module that throws at runtime so the error overlay
         // shows the validation message instead of crashing the dev server.
-        const message = err instanceof ManifestValidationError ? err.message : err instanceof Error ? err.message : String(err)
+        const message =
+          err instanceof ManifestValidationError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : String(err)
         return generateErrorModuleSource(message)
       }
     },
@@ -109,11 +142,44 @@ export function poemsPlugin(opts: PoemsPluginOptions = {}): Plugin {
   }
 }
 
-/** Generates the TS module source for a successfully-loaded manifest. */
-function generateModuleSource(poems: Poem[]): string {
-  const json = JSON.stringify(poems)
+/**
+ * Generates the TS module source for a successfully-loaded manifest.
+ *
+ * The emitted module contains an `import.meta.glob` call that vite-imagetools
+ * sees and processes — it produces one `<picture>` payload per JPEG in
+ * `src/assets/photos/` with AVIF/WebP/JPEG outputs at 5 widths.
+ *
+ * Photos are looked up by basename (poem slug + ".jpg"); the lookup throws if
+ * a manifest entry references a file not in the glob result, which mirrors the
+ * Phase 2 "missing photo" failure mode.
+ */
+function generateModuleSource(poems: Poem[], lqipMap: Record<string, string>): string {
+  const poemsJson = JSON.stringify(poems)
+  const lqipsJson = JSON.stringify(lqipMap)
   return `// Generated by vite/plugin-poems.ts — do not edit.
-export const poems = ${json}
+// Phase 4: photos resolved via vite-imagetools as=picture.
+const __pictures = import.meta.glob('@/assets/photos/*.jpg', {
+  query: { w: '320;640;960;1440;1920', format: 'avif;webp;jpg', as: 'picture' },
+  import: 'default',
+  eager: true,
+})
+const __lqips = ${lqipsJson}
+
+function __pickPicture(filename) {
+  const key = Object.keys(__pictures).find((k) => k.endsWith('/' + filename))
+  if (!key) {
+    const available = Object.keys(__pictures).map((k) => k.split('/').pop()).join(', ')
+    throw new Error('Phase 4: photo "' + filename + '" not found in src/assets/photos/. Available: ' + available)
+  }
+  return __pictures[key]
+}
+
+const __basePoems = ${poemsJson}
+export const poems = __basePoems.map((p) => ({
+  ...p,
+  picture: __pickPicture(p.file),
+  lqip: __lqips[p.slug],
+}))
 const bySlug = Object.fromEntries(poems.map((p) => [p.slug, p]))
 export function getPoem(slug) {
   return bySlug[slug]

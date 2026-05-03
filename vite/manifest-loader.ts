@@ -4,7 +4,8 @@
  * Reads:
  *   - <rootDir>/poems.txt
  *   - <rootDir>/content/manifest.yaml
- *   - <rootDir>/public/photos/   (override via opts.photosDir)
+ *   - <rootDir>/src/assets/photos/   (override via opts.photosDir; Phase 4 moved
+ *     photos here so vite-imagetools can transform them)
  *
  * Validates:
  *   - YAML shape via Zod (`ManifestSchema`)
@@ -38,7 +39,7 @@ export interface LoadManifestOptions {
   poemsTxtPath?: string
   /** Default: `<rootDir>/content/manifest.yaml`. */
   manifestYamlPath?: string
-  /** Default: `<rootDir>/public/photos`. */
+  /** Default: `<rootDir>/src/assets/photos`. */
   photosDir?: string
 }
 
@@ -59,7 +60,7 @@ export function loadManifest(opts: LoadManifestOptions): LoadedManifest {
   const { rootDir } = opts
   const poemsTxtPath = opts.poemsTxtPath ?? join(rootDir, 'poems.txt')
   const manifestYamlPath = opts.manifestYamlPath ?? join(rootDir, 'content', 'manifest.yaml')
-  const photosDir = opts.photosDir ?? join(rootDir, 'public', 'photos')
+  const photosDir = opts.photosDir ?? join(rootDir, 'src', 'assets', 'photos')
 
   const issues: string[] = []
 

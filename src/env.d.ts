@@ -20,6 +20,15 @@ declare module '*?raw' {
 }
 
 declare module 'virtual:poems' {
+  /**
+   * Phase 4 (ASSET-01..03): each poem carries a `picture` (vite-imagetools
+   * `as=picture` payload — AVIF/WebP/JPEG sources + a fallback `<img>`) and a
+   * `lqip` data URL (16-px WebP base64 placeholder).
+   */
+  export interface PoemPicture {
+    sources: Record<string, string>
+    img: { src: string; w: number; h: number }
+  }
   export interface Poem {
     slug: string
     title: string
@@ -30,6 +39,8 @@ declare module 'virtual:poems' {
     rope: number
     rotation: number
     liftDelay: number
+    picture: PoemPicture
+    lqip: string
   }
   export const poems: readonly Poem[]
   export function getPoem(slug: string): Poem | undefined
