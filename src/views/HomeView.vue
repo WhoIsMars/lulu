@@ -689,12 +689,119 @@ function onPolaroidEnter(e: PointerEvent): void {
   82% { transform: scale(1.02, 0.98) translate(-0.2px, -0.3px) rotate(-0.6deg); }
 }
 
+/* ── MOBILE / TOUCH layout ──
+   Single-polaroid-per-screen vertical feed (Instagram-post style). Each
+   polaroid centers in its own viewport; user scrolls down to reach the next.
+   Candle/darkness mask is off — touch has no cursor to illuminate, and
+   keeping the mask leaves the room near-black with no clear affordance.
+   The moonbeam + base atmosphere give enough mood without the dynamic mask. */
 @media (pointer: coarse) {
   .home__cursor-candle {
     display: none;
   }
-  .home__darkness {
-    --darkness-floor: var(--darkness-floor-touch);
+  .home__darkness,
+  .home::after {
+    display: none;
+  }
+
+  /* room becomes the scroll container */
+  .home {
+    overflow-y: auto;
+    overflow-x: hidden;
+    cursor: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: y mandatory;
+  }
+  .home__room {
+    display: block;
+    height: auto;
+    width: 100%;
+    padding: 0;
+    gap: 0;
+    overflow: visible;
+  }
+  /* skip the rope wrapper; rope-line SVG no longer makes sense for a vertical
+     feed (a single polaroid doesn't hang on a rope). Pegs become flat list. */
+  .home__rope,
+  .home__pegs {
+    display: contents;
+  }
+  .home__rope-line {
+    display: none;
+  }
+  /* one polaroid per snap stop, vertically centered, fills the viewport.
+     Padding gives breathing room above/below the polaroid frame. */
+  .home__peg-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    width: 100%;
+    margin: 0;
+    padding: 2rem 1.25rem;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    box-sizing: border-box;
+  }
+  /* big, centered, no random rotation/sway — clean single-image presentation */
+  .home__polaroid {
+    transform: rotate(0deg) !important;
+    animation: none !important;
+    width: min(78vw, 24rem);
+  }
+  .home__card {
+    width: 100%;
+    height: auto;
+  }
+  .home__photo {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+  .home__caption {
+    font-size: clamp(0.95rem, 2.6vw + 0.4rem, 1.3rem);
+    padding-top: 0.6rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* peg sits above the card in the centered column */
+  .home__peg {
+    width: 1.4rem;
+  }
+  /* :active feedback only — no hover behavior on touch */
+  .home__polaroid:active {
+    transform: scale(0.96) !important;
+  }
+
+  /* warm halo: each polaroid gets a permanent candle-like glow under it,
+     replacing the dynamic candle-cursor mood. Lit from below-center. */
+  .home__card-glow {
+    opacity: 0.85 !important;
+    transform: scale(1.4) !important;
+  }
+  .home__card-shadow {
+    opacity: 0.55 !important;
+  }
+
+  /* boost atmospheric layers since the dynamic mask is gone:
+     a stronger moonbeam plus a softer warm pool give depth. */
+  .home {
+    --moonbeam-strength: 0.32;
+  }
+  .home__base {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 110%, rgba(168, 90, 58, 0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 100% 90% at 50% 50%, var(--c-soot-800) 0%, #060403 80%);
+  }
+  .home__floor-light {
+    height: 50%;
+    background: radial-gradient(
+      ellipse 60% 80% at 50% 100%,
+      rgba(244, 208, 138, 0.12) 0%,
+      transparent 70%
+    );
   }
 }
 
