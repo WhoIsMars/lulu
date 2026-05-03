@@ -65,19 +65,27 @@ const poemAreaRef = ref<HTMLElement | null>(null)
 const poemBodyRef = ref<HTMLElement | null>(null)
 
 /** Auto-fit: shrink --fit on the body until its scrollHeight ≤ clientHeight,
- *  so even the longest poem renders entirely inside the polaroid back without
- *  scroll. Runs after layout settles (post-flip) and on resize. */
+ *  so the poem renders entirely inside the polaroid back. If even at the
+ *  floor (0.4×) the content still overflows (very long poem on a small
+ *  viewport), allow scroll so the reader can still reach every line. */
 function fitPoem(): void {
   const el = poemBodyRef.value
   if (!el) return
+  // reset to measure clean
+  el.style.setProperty('--fit', '1')
+  el.dataset.overflow = 'false'
+  el.style.overflowY = 'hidden'
   let fit = 1
-  el.style.setProperty('--fit', String(fit))
-  // measure: if overflowing, shrink in 0.05 steps down to 0.5 floor
-  for (let i = 0; i < 16; i += 1) {
+  for (let i = 0; i < 20; i += 1) {
     if (el.scrollHeight <= el.clientHeight + 1) break
-    fit = Math.max(0.5, fit - 0.05)
+    fit = Math.max(0.4, fit - 0.04)
     el.style.setProperty('--fit', String(fit))
-    if (fit <= 0.5) break
+    if (fit <= 0.4) break
+  }
+  // still doesn't fit at floor → allow vertical scroll (touch-friendly).
+  if (el.scrollHeight > el.clientHeight + 1) {
+    el.style.overflowY = 'auto'
+    el.dataset.overflow = 'true'
   }
 }
 
@@ -816,7 +824,9 @@ onUnmounted(() => {
 .pview__poem-body {
   /* base font-size; auto-fit script multiplies via --fit (default 1).
      For long poems the script shrinks --fit until content fits without
-     scroll, so the entire poem reads inside the polaroid. */
+     scroll. If even at the floor it overflows, the script enables
+     vertical scroll and sets data-overflow="true" — the bottom mask
+     then hints there's more text below. */
   --fit: 1;
   font:
     400 calc(clamp(0.74rem, 0.55vw + 0.5rem, 0.95rem) * var(--fit)) / 1.4
@@ -828,6 +838,26 @@ onUnmounted(() => {
   overflow: hidden;
   padding: 0.3rem 0 0.4rem;
   color: rgba(26, 20, 12, 0.92);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.pview__poem-body::-webkit-scrollbar {
+  display: none;
+}
+.pview__poem-body[data-overflow='true'] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 1.4rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - 1.4rem),
+    transparent 100%
+  );
 }
 .pview__poem-stanza {
   margin: 0 0 0.55rem;
